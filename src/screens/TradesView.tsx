@@ -5,6 +5,7 @@ import { computeTrade, formatDateTime, formatPrice } from '../lib/journal'
 import { computeStats } from '../lib/stats'
 import { ConfirmDialog, Modal } from '../components/Modal'
 import { IconCopy, IconEdit, IconImage, IconTrash } from '../components/Icons'
+import type { PropAccount } from '../lib/prop'
 
 type SortKey = 'datetime' | 'symbol' | 'side' | 'qty' | 'entry' | 'exit' | 'ticks' | 'points' | 'net' | 'strategy'
 const COLS: { key: SortKey; label: string; num?: boolean }[] = [
@@ -27,9 +28,21 @@ interface Props {
   onDuplicate: (t: Trade) => void
   onDelete: (id: string) => void
   onLoadSample: () => void
+  accounts?: PropAccount[]
+  onAssign?: (ids: string[], accountId: string | null) => void
 }
 
-export function TradesView({ trades, totalCount, onEdit, onDuplicate, onDelete, onLoadSample }: Props) {
+export function TradesView({ trades, totalCount, onEdit, onDuplicate, onDelete, onLoadSample, accounts = [], onAssign }: Props) {
+  const [sel, setSel] = useState<Set<string>>(new Set())
+  const [target, setTarget] = useState('')
+  const [assignMsg, setAssignMsg] = useState<string | null>(null)
+  const acctName = useMemo(() => new Map(accounts.map((a) => [a.id, a.name])), [accounts])
+  const canAssign = !!onAssign && accounts.length > 0
+  const visibleIds = trades.map((t) => t.id)
+  const selVisible = visibleIds.filter((id) => sel.has(id))
+  const allSel = visibleIds.length > 0 && selVisible.length === visibleIds.length
+  const toggle = (id: string) => setSel((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const toggleAll = () => setSel(allSel ? new Set() : new Set(visibleIds))
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'datetime', dir: -1 })
   const [confirm, setConfirm] = useState<Trade | null>(null)
   const [viewShot, setViewShot] = useState<Trade | null>(null)
@@ -79,10 +92,26 @@ export function TradesView({ trades, totalCount, onEdit, onDuplicate, onDelete, 
     <>
       <div className="summary-strip" data-testid="summary">
         <span className="muted">{trades.length} of {totalCount} trades</span>
+        {canAssign && <button type="button" className="btn ghost sm sel-all" onClick={toggleAll} data-testid="select-all">{allSel ? 'Clear selection' : 'Select all'}</button>}
         {totals.map((s) => (
           <span key={s.currency} className={`pill ${pnlCls(s.net)}`}>{s.currency} net <b>{formatMoney(s.net, s.currency, 2)}</b></span>
         ))}
       </div>
+
+      {canAssign && selVisible.length > 0 && (
+        <div className="bulk-bar" data-testid="bulk-bar">
+          <b>{selVisible.length} selected</b>
+          <select aria-label="Assign to prop account" value={target} onChange={(e) => setTarget(e.target.value)}>
+            <option value="">Choose account…</option>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            <option value="__none">Remove from account</option>
+          </select>
+          <button type="button" className="btn primary sm" disabled={!target} data-testid="bulk-apply"
+            onClick={() => { onAssign!(selVisible, target === '__none' ? null : target); setAssignMsg(`${selVisible.length} trades ${target === '__none' ? 'unlinked' : `assigned to ${acctName.get(target)}`}.`); setSel(new Set()); setTarget('') }}>Apply</button>
+          <button type="button" className="btn ghost sm" onClick={() => setSel(new Set())}>Cancel</button>
+        </div>
+      )}
+      {assignMsg && <p className="toast ok" role="status" onClick={() => setAssignMsg(null)}>{assignMsg}</p>}
 
       {trades.length === 0 ? <p className="empty panel">No trades match the filters.</p> : <>
         {/* Desktop table */}
@@ -90,6 +119,7 @@ export function TradesView({ trades, totalCount, onEdit, onDuplicate, onDelete, 
           <table className="trades">
             <thead>
               <tr>
+                {canAssign && <th className="chk"><input type="checkbox" aria-label="Select all trades" checked={allSel} onChange={toggleAll} /></th>}
                 {COLS.map((c) => (
                   <th key={c.key} className={c.num ? 'num' : ''} aria-sort={sort.key === c.key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
                     <button type="button" onClick={() => clickSort(c.key)}>
@@ -102,9 +132,10 @@ export function TradesView({ trades, totalCount, onEdit, onDuplicate, onDelete, 
             </thead>
             <tbody>
               {rows.map(({ t, c }) => (
-                <tr key={t.id}>
+                <tr key={t.id} className={sel.has(t.id) ? 'selected' : ''}>
+                  {canAssign && <td className="chk"><input type="checkbox" aria-label={`Select ${t.symbol} ${t.datetime}`} checked={sel.has(t.id)} onChange={() => toggle(t.id)} /></td>}
                   <td className="mono dim">{formatDateTime(t.datetime)}</td>
-                  <td><span className="sym">{t.symbol}</span>{t.sample && <span className="badge sample">Sample</span>}</td>
+                  <td><span className="sym">{t.symbol}</span>{t.sample && <span className="badge sample">Sample</span>}{t.accountId && <span className="acct-tag" title={acctName.get(t.accountId) ?? 'Deleted account'}>{acctName.get(t.accountId) ?? '—'}</span>}</td>
                   <td><span className={`side-tag ${t.side}`}>{t.side === 'long' ? 'Long' : 'Short'}</span></td>
                   <td className="num">{t.qty}</td>
                   <td className="num">{formatPrice(t.entry, t)}</td>
@@ -135,9 +166,10 @@ export function TradesView({ trades, totalCount, onEdit, onDuplicate, onDelete, 
             </label>
           </div>
           {rows.map(({ t, c }) => (
-            <article key={t.id} className="tcard">
+            <article key={t.id} className={`tcard ${sel.has(t.id) ? 'selected' : ''}`}>
               <div className="tc-top">
                 <div>
+                  {canAssign && <input type="checkbox" className="tc-chk" aria-label={`Select ${t.symbol} ${t.datetime}`} checked={sel.has(t.id)} onChange={() => toggle(t.id)} />}
                   <span className="sym">{t.symbol}</span>
                   <span className={`side-tag ${t.side}`}>{t.side === 'long' ? 'Long' : 'Short'} {t.qty}</span>
                   {t.sample && <span className="badge sample">Sample</span>}
@@ -152,6 +184,7 @@ export function TradesView({ trades, totalCount, onEdit, onDuplicate, onDelete, 
                 <span className="dim">{formatDateTime(t.datetime)}{t.strategy ? ` · ${t.strategy}` : ''}{t.fees ? ` · fees ${formatMoney(t.fees, t.currency, 2)}` : ''}</span>
                 {actions(t)}
               </div>
+              {t.accountId && <p className="tc-acct"><span className="acct-tag">{acctName.get(t.accountId) ?? 'Deleted account'}</span></p>}
               {t.notes && <p className="tc-notes">{t.notes}</p>}
             </article>
           ))}

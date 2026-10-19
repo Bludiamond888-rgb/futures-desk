@@ -93,13 +93,16 @@ export interface TradeFilters {
   strategy: string // '' = all
   from: string // 'YYYY-MM-DD' or ''
   to: string
+  /** '' = all, 'none' = unassigned, else a PropAccount id. */
+  account?: string
 }
-export const EMPTY_FILTERS: TradeFilters = { symbol: '', strategy: '', from: '', to: '' }
+export const EMPTY_FILTERS: TradeFilters = { symbol: '', strategy: '', from: '', to: '', account: '' }
 
 export function filterTrades(trades: Trade[], f: TradeFilters): Trade[] {
   return trades.filter((t) => {
     if (f.symbol && t.symbol !== f.symbol) return false
     if (f.strategy && t.strategy !== f.strategy) return false
+    if (f.account === 'none' ? !!t.accountId : f.account && t.accountId !== f.account) return false
     const d = t.datetime.slice(0, 10)
     if (f.from && d < f.from) return false
     if (f.to && d > f.to) return false

@@ -71,6 +71,8 @@ export interface Trade {
   priceFormat?: PriceFormat
   /** Compressed JPEG data URL (optional). */
   screenshot?: string
+  /** Optional link to a prop account (PropAccount.id). */
+  accountId?: string
   sample?: boolean
   createdAt: string
   updatedAt: string

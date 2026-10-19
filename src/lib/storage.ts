@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { DEFAULT_STRATEGIES, type ContractSpec, type Trade } from '../data/types'
 import { CONTRACTS } from '../data/contracts'
+import type { PropAccount } from './prop'
 
 export const STORAGE_KEYS = {
   customContracts: 'fta.customContracts.v1',
@@ -9,6 +10,8 @@ export const STORAGE_KEYS = {
   trades: 'fta.trades.v1',
   strategies: 'fta.strategies.v1',
   filters: 'fta.journal.filters.v1',
+  propAccounts: 'fta.propAccounts.v1',
+  calcProp: 'fta.calculator.prop.v1',
 } as const
 
 /** Browsers give an origin roughly 5 MB (≈5M UTF-16 chars) of localStorage. */
@@ -98,6 +101,17 @@ export function useTrades() {
   }), [setTrades])
   const remove = useCallback((id: string) => setTrades((prev) => prev.filter((t) => t.id !== id)), [setTrades])
   return { trades, setTrades, upsert, remove }
+}
+
+export function usePropAccounts() {
+  const [accounts, setAccounts] = useLocalStorage<PropAccount[]>(STORAGE_KEYS.propAccounts, [])
+  const upsertAccount = useCallback((a: PropAccount) => setAccounts((prev) => {
+    const i = prev.findIndex((x) => x.id === a.id)
+    if (i < 0) return [...prev, a]
+    const next = prev.slice(); next[i] = a; return next
+  }), [setAccounts])
+  const removeAccount = useCallback((id: string) => setAccounts((prev) => prev.filter((a) => a.id !== id)), [setAccounts])
+  return { accounts, setAccounts, upsertAccount, removeAccount }
 }
 
 export function useStrategies() {

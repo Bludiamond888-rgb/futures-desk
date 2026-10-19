@@ -7,6 +7,7 @@ import { formatMoney, formatNumber, parseMove } from '../lib/calc'
 import { computeTrade, newId, nowLocal, priceInput, snapshotSpec } from '../lib/journal'
 import { compressImage } from '../lib/image'
 import { formatBytesish, getStorageHealth, STORAGE_LIMIT_CHARS, STORAGE_WARN_RATIO } from '../lib/storage'
+import type { PropAccount } from '../lib/prop'
 
 export type FormMode = 'new' | 'edit' | 'duplicate'
 
@@ -19,9 +20,11 @@ interface Props {
   onSave: (t: Trade) => void
   onClose: () => void
   onManageStrategies: () => void
+  accounts?: PropAccount[]
+  defaultAccount?: string
 }
 
-export function TradeForm({ mode, initial, contracts, strategies, defaultSymbol, onSave, onClose, onManageStrategies }: Props) {
+export function TradeForm({ mode, initial, contracts, strategies, defaultSymbol, onSave, onClose, onManageStrategies, accounts = [], defaultAccount = '' }: Props) {
   const startSpec = contracts.find((c) => c.symbol === (initial?.symbol ?? defaultSymbol)) ?? contracts[0]
   const [symbol, setSymbol] = useState(startSpec.symbol)
   const [f, setF] = useState(() => ({
@@ -34,6 +37,7 @@ export function TradeForm({ mode, initial, contracts, strategies, defaultSymbol,
     fees: initial ? String(initial.fees) : '0',
     strategy: initial?.strategy ?? strategies[0] ?? '',
     notes: initial?.notes ?? '',
+    accountId: initial ? initial.accountId ?? '' : defaultAccount,
   }))
   const [shot, setShot] = useState<string | undefined>(initial?.screenshot)
   const [shotMsg, setShotMsg] = useState<string | null>(null)
@@ -103,6 +107,7 @@ export function TradeForm({ mode, initial, contracts, strategies, defaultSymbol,
       tickSize: spec.tickSize, tickValue: spec.tickValue, currency: spec.currency,
       ...(spec.priceFormat ? { priceFormat: spec.priceFormat } : {}),
       ...(shot ? { screenshot: shot } : {}),
+      ...(f.accountId ? { accountId: f.accountId } : {}),
       createdAt: mode === 'edit' && initial ? initial.createdAt : now,
       updatedAt: now,
     }
@@ -169,6 +174,15 @@ export function TradeForm({ mode, initial, contracts, strategies, defaultSymbol,
               <button type="button" className="btn ghost sm" onClick={onManageStrategies} title="Edit strategy list">Edit list</button>
             </div>
           </label>
+          {(accounts.length > 0 || f.accountId) && (
+            <label className="span2"><span className="lt">Prop account <small>(optional)</small></span>
+              <select name="accountId" value={f.accountId} onChange={set('accountId')}>
+                <option value="">None</option>
+                {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.status !== 'active' ? ` (${a.status})` : ''}</option>)}
+                {f.accountId && !accounts.some((a) => a.id === f.accountId) && <option value={f.accountId}>(deleted account)</option>}
+              </select>
+            </label>
+          )}
           <label className="span2">Notes
             <textarea name="notes" rows={3} value={f.notes} onChange={set('notes')} placeholder="Setup, execution, emotions…" />
           </label>

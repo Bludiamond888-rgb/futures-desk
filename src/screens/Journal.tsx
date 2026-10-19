@@ -6,6 +6,7 @@ import { TradeForm, StrategyManager, type FormMode } from '../components/TradeFo
 import { TradesView } from './TradesView'
 import { StatsView } from './StatsView'
 import { DataView } from './DataView'
+import type { PropAccount } from '../lib/prop'
 
 export type JournalTab = 'trades' | 'stats' | 'data'
 
@@ -22,10 +23,12 @@ interface Props {
   strategies: string[]
   setStrategies: (s: string[]) => void
   defaultSymbol: string
+  accounts: PropAccount[]
+  setAccounts: (a: PropAccount[] | ((p: PropAccount[]) => PropAccount[])) => void
 }
 
 export function Journal(props: Props) {
-  const { sub, onSub, contracts, trades, setTrades, upsert, remove, strategies, setStrategies, defaultSymbol } = props
+  const { sub, onSub, contracts, trades, setTrades, upsert, remove, strategies, setStrategies, defaultSymbol, accounts, setAccounts } = props
   const [filters, setFilters] = useLocalStorage<TradeFilters>(STORAGE_KEYS.filters, EMPTY_FILTERS)
   const [form, setForm] = useState<{ mode: FormMode; trade: Trade | null } | null>(null)
   const [stratOpen, setStratOpen] = useState(false)
@@ -39,7 +42,15 @@ export function Journal(props: Props) {
 
   const symbolsInUse = useMemo(() => [...new Set(trades.map((t) => t.symbol))].sort(), [trades])
   const strategyOptions = useMemo(() => [...new Set([...strategies, ...trades.map((t) => t.strategy).filter(Boolean)])], [strategies, trades])
-  const activeFilters = !!(filters.symbol || filters.strategy || filters.from || filters.to)
+  const activeFilters = !!(filters.symbol || filters.strategy || filters.from || filters.to || filters.account)
+  const assign = (ids: string[], accountId: string | null) => {
+    const set = new Set(ids); const now = new Date().toISOString()
+    setTrades((prev) => prev.map((t) => {
+      if (!set.has(t.id)) return t
+      const { accountId: _old, ...rest } = t; void _old
+      return accountId ? { ...rest, accountId, updatedAt: now } : { ...rest, updatedAt: now }
+    }))
+  }
 
   const filterBar = (
     <div className="filters" data-testid="filters">
@@ -51,6 +62,13 @@ export function Journal(props: Props) {
         <option value="">All strategies</option>
         {strategyOptions.map((s) => <option key={s} value={s}>{s}</option>)}
       </select>
+      {(accounts.length > 0 || filters.account) && (
+        <select aria-label="Filter by prop account" value={filters.account ?? ''} onChange={(e) => setFilters({ ...filters, account: e.target.value })}>
+          <option value="">All accounts</option>
+          <option value="none">No prop account</option>
+          {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      )}
       <label className="date-f"><span>From</span><input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} /></label>
       <label className="date-f"><span>To</span><input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} /></label>
       {activeFilters && <button type="button" className="btn ghost sm" onClick={() => setFilters(EMPTY_FILTERS)}>Clear</button>}
@@ -82,6 +100,8 @@ export function Journal(props: Props) {
           onDuplicate={(t) => setForm({ mode: 'duplicate', trade: t })}
           onDelete={remove}
           onLoadSample={() => onSub('data')}
+          accounts={accounts}
+          onAssign={assign}
         />
       )}
       {sub === 'stats' && <StatsView trades={filtered} totalCount={trades.length} filtered={activeFilters} />}
@@ -90,6 +110,7 @@ export function Journal(props: Props) {
           trades={trades} setTrades={setTrades} contracts={contracts}
           customContracts={props.customContracts} setCustomContracts={props.setCustomContracts}
           strategies={strategies} setStrategies={setStrategies}
+          propAccounts={accounts} setPropAccounts={setAccounts}
         />
       )}
 
@@ -100,6 +121,8 @@ export function Journal(props: Props) {
           contracts={contracts}
           strategies={strategies}
           defaultSymbol={defaultSymbol}
+          accounts={accounts}
+          defaultAccount={filters.account && filters.account !== 'none' ? filters.account : ''}
           onClose={() => setForm(null)}
           onSave={(t) => { upsert(t); setForm(null) }}
           onManageStrategies={() => setStratOpen(true)}

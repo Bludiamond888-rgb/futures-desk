@@ -1,7 +1,9 @@
 import type { ContractSpec, Trade } from '../data/types'
+import type { PropAccount } from './prop'
 
 export const BACKUP_APP = 'futures-desk'
-export const BACKUP_VERSION = 1
+/** v2 adds propAccounts. v1 files still restore (no prop accounts). */
+export const BACKUP_VERSION = 2
 
 export interface Backup {
   app: typeof BACKUP_APP
@@ -10,9 +12,10 @@ export interface Backup {
   trades: Trade[]
   customContracts: ContractSpec[]
   strategies: string[]
+  propAccounts: PropAccount[]
 }
 
-export function makeBackup(data: { trades: Trade[]; customContracts: ContractSpec[]; strategies: string[] }): Backup {
+export function makeBackup(data: { trades: Trade[]; customContracts: ContractSpec[]; strategies: string[]; propAccounts: PropAccount[] }): Backup {
   return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), ...data }
 }
 
@@ -24,6 +27,13 @@ export function parseBackup(text: string): Backup {
   if (typeof b.version !== 'number' || b.version > BACKUP_VERSION) throw new Error('Unsupported backup version')
   if (!Array.isArray(b.trades) || !Array.isArray(b.customContracts) || !Array.isArray(b.strategies)) {
     throw new Error('Backup is missing trades, customContracts or strategies')
+  }
+  if (b.propAccounts == null) b.propAccounts = []
+  if (!Array.isArray(b.propAccounts)) throw new Error('Backup has an invalid propAccounts list')
+  for (const a of b.propAccounts) {
+    if (!a || typeof a.id !== 'string' || !Number.isFinite(a.startingBalance) || !a.rules || !(a.rules.maxDrawdown >= 0)) {
+      throw new Error('Backup contains an invalid prop account')
+    }
   }
   for (const t of b.trades) {
     if (!t || typeof t.id !== 'string' || typeof t.symbol !== 'string' || !(t.tickSize > 0) || !(t.tickValue > 0)) {

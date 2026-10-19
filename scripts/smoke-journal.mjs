@@ -2,6 +2,8 @@
 //  - PWA build over http: add 3 trades, reload, check stats, filters, duplicate/delete,
 //    CSV export→import round trip, JSON backup→restore, service worker offline load.
 //  - Single-file build over file://: add a trade, reload, check it persisted.
+//  - Phase 3: prop account create/edit, bulk-assign, linked trade, dashboard values, calculator
+//    prop warning + over-max, backup v2 with accounts, sample load/remove, account delete unlinks.
 import { chromium } from 'playwright'
 import path from 'node:path'
 import { readFile } from 'node:fs/promises'
@@ -32,6 +34,7 @@ async function addTrade(page, t) {
   await page.fill('.modal input[name=fees]', t.fees)
   await page.selectOption('.modal select[name=strategy]', t.strategy)
   await page.fill('.modal textarea[name=notes]', t.notes ?? '')
+  if (t.account) await page.selectOption('.modal select[name=accountId]', t.account)
   const net = norm(await page.textContent('[data-testid=form-net]'))
   await page.click('.modal-foot button:has-text("Save trade")')
   await page.waitForSelector('.modal', { state: 'detached' })
@@ -41,8 +44,8 @@ async function addTrade(page, t) {
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || 'chrome' })
 
 // ───────── PWA build over HTTP ─────────
-const { server, url } = await serve(path.join(root, 'dist'))
-const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true })
+const { server, url } = await serve(path.resolve(root, process.env.DIST_DIR || 'dist'))
+const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true, timezoneId: 'America/New_York' })
 const page = await ctx.newPage()
 page.on('pageerror', (e) => { failures++; console.log('PAGE ERROR', e.message) })
 await page.goto(url + '#/journal')
@@ -132,6 +135,97 @@ await page.reload()
 check('near-limit warning banner', await page.locator('.banner.warn').count(), 1)
 await page.evaluate(() => localStorage.removeItem('zz.filler'))
 
+// ───────── Phase 3: prop-firm tracker ─────────
+const savedTrades = await page.evaluate(() => localStorage.getItem('fta.trades.v1'))
+const ws = (x) => norm(x).replace(/\s+/g, ' ')
+await page.goto(url + '#/calculator')
+check('calc: prop panel hidden without accounts', await page.locator('[data-testid=calc-prop]').count(), 0)
+await page.goto(url + '#/prop')
+check('prop: empty state', await page.locator('text=No prop accounts yet').count(), 1)
+await page.click('button:has-text("+ New account")')
+await page.selectOption('.modal select[name=firm]', 'topstep')
+check('prop: preset target', await page.inputValue('.modal input[name=profitTarget]'), '3000')
+check('prop: preset drawdown', await page.inputValue('.modal input[name=maxDrawdown]'), '2000')
+check('prop: preset lock at start', await page.inputValue('.modal input[name=trailLockOffset]'), '0')
+check('prop: preset source link', await page.locator('.modal .src-note a').getAttribute('href'), 'https://help.topstep.com/en/articles/8284197-trading-combine-parameters')
+await page.selectOption('.modal select[name=sizeSel]', '150000')
+check('prop: 150K drawdown', await page.inputValue('.modal input[name=maxDrawdown]'), '4500')
+await page.selectOption('.modal select[name=sizeSel]', '50000')
+await page.fill('.modal input[name=name]', 'Smoke TS 50K')
+await page.fill('.modal input[name=startDate]', '2026-10-01')
+await page.fill('.modal input[name=dailyLossLimit]', '1000')
+check('prop: edited badge', await page.locator('.modal .form-sub .badge').count(), 1)
+await page.click('.modal-foot button:has-text("Create account")')
+await page.waitForSelector('.pcard')
+check('prop: card created', await page.locator('.pcard').count(), 1)
+check('prop: starting balance', norm(await page.textContent('[data-testid=balance]')), '$50,000.00')
+check('prop: rules disclaimer', (await page.textContent('.pcard .pc-foot')).includes('Rules change often — confirm with your firm.'), true)
+const acctId = await page.evaluate(() => JSON.parse(localStorage.getItem('fta.propAccounts.v1'))[0].id)
+
+// bulk-assign existing trades
+await page.goto(url + '#/journal')
+await page.click('[data-testid=select-all]')
+check('bulk: bar shown', await page.locator('[data-testid=bulk-bar]').count(), 1)
+await page.selectOption('[data-testid=bulk-bar] select', acctId)
+await page.click('[data-testid=bulk-apply]')
+check('bulk: 3 trades linked', await page.evaluate((id) => JSON.parse(localStorage.getItem('fta.trades.v1')).filter((t) => t.accountId === id).length, acctId), 3)
+await page.selectOption('select[aria-label="Filter by prop account"]', 'none')
+check('filter: unassigned → none', await page.locator('table.trades tbody tr').count(), 0)
+await page.selectOption('select[aria-label="Filter by prop account"]', '')
+
+// a losing trade today via the trade-form account picker
+const nowStr = await page.evaluate(() => { const d = new Date(Date.now() - 10 * 60000); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}` })
+check('form: linked trade net', await addTrade(page, { symbol: 'ES', datetime: nowStr, side: 'long', entry: '5850', exit: '5842.5', qty: '2', fees: '9', strategy: 'ORB', account: acctId }), '-$759.00')
+await page.goto(url + '#/prop'); await page.waitForSelector('.pcard')
+check('prop: balance net of fees', norm(await page.textContent('[data-testid=balance]')), '$49,778.30')
+check('prop: DD room (EOD from closes)', ws(await page.textContent('[data-testid=dd-room] .g-head b')), '$1,241.00')
+check('prop: DLL room', ws(await page.textContent('[data-testid=dll-room] .g-head b')), '$241.00')
+check('prop: warning status', norm(await page.textContent('.pcard [data-testid=health]')), 'Warning')
+check('prop: non-USD excluded note', (await page.textContent('.pcard .pc-foot')).includes('non-USD'), true)
+await page.reload(); await page.waitForSelector('.pcard')
+check('prop: persisted after reload', norm(await page.textContent('[data-testid=balance]')), '$49,778.30')
+
+// calculator integration
+await page.goto(url + '#/calculator')
+check('calc: prop panel shown', await page.locator('[data-testid=calc-prop]').count(), 1)
+check('calc: collapsed by default', await page.locator('.pp-body').count(), 0)
+await page.click('.pp-toggle')
+await page.selectOption('#pp-acct', acctId)
+await page.click('.picker-control'); await page.fill('.picker-input', 'ES'); await page.keyboard.press('Enter')
+await page.fill('#qty', '1'); await page.fill('#pp-stop', '4')
+check('calc: risk sentence', ws(await page.textContent('[data-testid=prop-risk] p')), 'This risks $200.00, which leaves $1,041.00 before your drawdown limit and $41.00 before today’s daily loss limit.')
+check('calc: no warning when inside', await page.locator('[data-testid=prop-risk] .pp-warn').count(), 0)
+check('calc: max contracts by room', norm(await page.textContent('[data-testid=max-by-room]')), '1')
+await page.fill('#pp-stop', '5')
+check('calc: red breach warning', await page.locator('[data-testid=prop-risk].bad .pp-warn').count(), 1)
+check('calc: max contracts by room = 0', norm(await page.textContent('[data-testid=max-by-room]')), '0')
+await page.fill('#pp-stop', '1'); await page.fill('#qty', '6')
+check('calc: over account max warning', (await page.textContent('[data-testid=over-max]')).includes('max of 5 minis'), true)
+await page.click('.picker-control'); await page.fill('.picker-input', 'MES'); await page.keyboard.press('Enter')
+check('calc: micros use micro limit', await page.locator('[data-testid=over-max]').count(), 0)
+
+// backup carries prop accounts
+await page.goto(url + '#/journal/data')
+const [pb] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Download backup")')])
+const pbPath = path.join(root, 'screens', '.smoke-backup-prop.json')
+await pb.saveAs(pbPath)
+const pbJson = JSON.parse(await readFile(pbPath, 'utf8'))
+check('backup v2', pbJson.version, 2)
+check('backup has prop accounts', pbJson.propAccounts.length, 1)
+await page.evaluate(() => localStorage.setItem('fta.propAccounts.v1', '[]')); await page.reload()
+await page.setInputFiles('[data-testid=json-input]', pbPath)
+await page.click('[data-testid=confirm]')
+check('restore brings accounts back', await page.evaluate(() => JSON.parse(localStorage.getItem('fta.propAccounts.v1')).length), 1)
+// sample data adds SAMPLE accounts and removes them again
+await page.click('button:has-text("Load sample data")')
+check('sample: 4 SAMPLE accounts added', await page.evaluate(() => JSON.parse(localStorage.getItem('fta.propAccounts.v1')).filter((a) => a.sample && a.name.startsWith('SAMPLE')).length), 4)
+await page.click('button:has-text("Remove sample data")')
+check('sample: removed, own account kept', await page.evaluate(() => JSON.parse(localStorage.getItem('fta.propAccounts.v1')).length), 1)
+// delete account → trades unlinked, not deleted
+await page.goto(url + '#/prop'); await page.click('.pcard button[aria-label="Delete account"]'); await page.click('[data-testid=confirm]')
+check('delete account: trades kept + unlinked', await page.evaluate(() => { const t = JSON.parse(localStorage.getItem('fta.trades.v1')); return `${t.length}/${t.filter((x) => x.accountId).length}` }), '4/0')
+await page.evaluate((t) => { localStorage.setItem('fta.trades.v1', t); localStorage.removeItem('fta.propAccounts.v1'); localStorage.removeItem('fta.calculator.prop.v1') }, savedTrades)
+
 // Service worker + offline
 await page.goto(url + '#/calculator')
 await page.evaluate(() => navigator.serviceWorker.ready)
@@ -150,7 +244,7 @@ await ctx.close()
 server.close()
 
 // ───────── Single-file build over file:// ─────────
-const single = pathToFileURL(path.join(root, 'dist-single/index.html')).href
+const single = pathToFileURL(path.resolve(root, process.env.SINGLE_DIR || 'dist-single', 'index.html')).href
 const p2 = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 p2.on('pageerror', (e) => { failures++; console.log('PAGE ERROR (single)', e.message) })
 await p2.goto(single + '#/journal')

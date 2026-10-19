@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
-import type { ContractSpec } from '../data/types'
+import type { ContractSpec, Trade } from '../data/types'
+import { CalcPropPanel } from '../components/CalcPropPanel'
+import type { PropAccount } from '../lib/prop'
 import { ContractPicker } from '../components/ContractPicker'
 import { calculate, formatMoney, formatNumber, formatTreasury, parseMove, type MoveUnit } from '../lib/calc'
 import { STORAGE_KEYS, useLocalStorage } from '../lib/storage'
@@ -15,11 +17,13 @@ interface Props {
   contracts: ContractSpec[]
   symbol: string
   onSymbolChange: (s: string) => void
+  accounts?: PropAccount[]
+  trades?: Trade[]
 }
 
 export const DEFAULT_CALC: CalcState = { symbol: 'MNQ', qty: '1', move: '10', unit: 'points' }
 
-export function Calculator({ contracts, symbol, onSymbolChange }: Props) {
+export function Calculator({ contracts, symbol, onSymbolChange, accounts = [], trades = [] }: Props) {
   const [st, setSt] = useLocalStorage<Omit<CalcState, 'symbol'>>(STORAGE_KEYS.calculator, {
     qty: DEFAULT_CALC.qty, move: DEFAULT_CALC.move, unit: DEFAULT_CALC.unit,
   })
@@ -91,6 +95,7 @@ export function Calculator({ contracts, symbol, onSymbolChange }: Props) {
           {is32 && st.unit === 'points' && (
             <p className="hint">Treasury: 1 point = 1 full handle. You can type 32nds as <code>1-16</code> (= 1 16/32) or <code>0-08.5</code>.</p>
           )}
+          <CalcPropPanel accounts={accounts} trades={trades} spec={spec} qty={qtyOk ? qty : null} unit={st.unit} />
         </div>
 
         <div className="panel result">

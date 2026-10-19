@@ -2,7 +2,8 @@ import { useRef, useState } from 'react'
 import type { ContractSpec, Trade } from '../data/types'
 import { mergeTrades, tradesFromCSV, tradesToCSV } from '../lib/csv'
 import { downloadText, makeBackup, parseBackup, stamp, type Backup } from '../lib/backup'
-import { sampleTrades } from '../lib/sample'
+import { samplePropData, sampleTrades } from '../lib/sample'
+import type { PropAccount } from '../lib/prop'
 import { formatBytesish, useStorageHealth } from '../lib/storage'
 import { ConfirmDialog } from '../components/Modal'
 
@@ -14,16 +15,18 @@ interface Props {
   setCustomContracts: (c: ContractSpec[]) => void
   strategies: string[]
   setStrategies: (s: string[]) => void
+  propAccounts: PropAccount[]
+  setPropAccounts: (a: PropAccount[] | ((p: PropAccount[]) => PropAccount[])) => void
 }
 
-export function DataView({ trades, setTrades, contracts, customContracts, setCustomContracts, strategies, setStrategies }: Props) {
+export function DataView({ trades, setTrades, contracts, customContracts, setCustomContracts, strategies, setStrategies, propAccounts, setPropAccounts }: Props) {
   const csvRef = useRef<HTMLInputElement>(null)
   const jsonRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const [pendingRestore, setPendingRestore] = useState<Backup | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
   const health = useStorageHealth()
-  const hasSample = trades.some((t) => t.sample)
+  const hasSample = trades.some((t) => t.sample) || propAccounts.some((a) => a.sample)
   const shots = trades.filter((t) => t.screenshot).length
 
   async function importCSV(file?: File) {
@@ -57,10 +60,10 @@ export function DataView({ trades, setTrades, contracts, customContracts, setCus
 
       <div className="panel">
         <h3>Full backup (JSON)</h3>
-        <p className="hint">Everything: trades (with screenshots), custom contracts and your strategy list. Restoring <b>replaces</b> what’s on this device.</p>
+        <p className="hint">Everything: trades (with screenshots), prop accounts, custom contracts and your strategy list. Restoring <b>replaces</b> what’s on this device.</p>
         <div className="btn-row">
           <button type="button" className="btn primary"
-            onClick={() => downloadText(`futures-desk-backup-${stamp()}.json`, JSON.stringify(makeBackup({ trades, customContracts, strategies })), 'application/json')}>Download backup</button>
+            onClick={() => downloadText(`futures-desk-backup-${stamp()}.json`, JSON.stringify(makeBackup({ trades, customContracts, strategies, propAccounts })), 'application/json')}>Download backup</button>
           <button type="button" className="btn" onClick={() => jsonRef.current?.click()}>Restore backup…</button>
           <input ref={jsonRef} type="file" accept=".json,application/json" hidden data-testid="json-input" onChange={(e) => { pickBackup(e.target.files?.[0]); e.target.value = '' }} />
         </div>
@@ -75,11 +78,11 @@ export function DataView({ trades, setTrades, contracts, customContracts, setCus
 
       <div className="panel">
         <h3>Sample data</h3>
-        <p className="hint">Load 15 EXAMPLE trades (clearly marked “Sample”) to try the journal and stats. They’re off by default and can be removed in one click; your own trades are untouched.</p>
+        <p className="hint">Load 15 EXAMPLE trades plus 4 EXAMPLE prop accounts with their own trades (all clearly marked “Sample”) to try the journal, stats and prop tracker. They’re off by default and can be removed in one click; your own trades are untouched.</p>
         <div className="btn-row">
           {!hasSample
-            ? <button type="button" className="btn" onClick={() => { setTrades((p) => [...p.filter((t) => !t.sample), ...sampleTrades()]); setMsg({ kind: 'ok', text: 'Sample trades loaded.' }) }}>Load sample data</button>
-            : <button type="button" className="btn" onClick={() => { setTrades((p) => p.filter((t) => !t.sample)); setMsg({ kind: 'ok', text: 'Sample trades removed.' }) }}>Remove sample data</button>}
+            ? <button type="button" className="btn" onClick={() => { const sp = samplePropData(); setTrades((p) => [...p.filter((t) => !t.sample), ...sampleTrades(), ...sp.trades]); setPropAccounts((p) => [...p.filter((a) => !a.sample), ...sp.accounts]); setMsg({ kind: 'ok', text: 'Sample trades and prop accounts loaded.' }) }}>Load sample data</button>
+            : <button type="button" className="btn" onClick={() => { setTrades((p) => p.filter((t) => !t.sample)); setPropAccounts((p) => p.filter((a) => !a.sample)); setMsg({ kind: 'ok', text: 'Sample data removed.' }) }}>Remove sample data</button>}
           <button type="button" className="btn ghost danger-text" disabled={!trades.length} onClick={() => setConfirmClear(true)}>Delete all trades…</button>
         </div>
       </div>
@@ -91,13 +94,14 @@ export function DataView({ trades, setTrades, contracts, customContracts, setCus
           title="Restore backup?"
           confirmLabel="Replace & restore"
           danger
-          message={<>This replaces your current {trades.length} trades, {customContracts.length} custom contracts and strategy list with the backup from <b>{pendingRestore.exportedAt.slice(0, 16).replace('T', ' ')} UTC</b>: {pendingRestore.trades.length} trades, {pendingRestore.customContracts.length} custom contracts, {pendingRestore.strategies.length} strategies.</>}
+          message={<>This replaces your current {trades.length} trades, {propAccounts.length} prop accounts, {customContracts.length} custom contracts and strategy list with the backup from <b>{pendingRestore.exportedAt.slice(0, 16).replace('T', ' ')} UTC</b>: {pendingRestore.trades.length} trades, {pendingRestore.propAccounts.length} prop accounts, {pendingRestore.customContracts.length} custom contracts, {pendingRestore.strategies.length} strategies.</>}
           onCancel={() => setPendingRestore(null)}
           onConfirm={() => {
             setTrades(pendingRestore.trades)
             setCustomContracts(pendingRestore.customContracts)
             setStrategies(pendingRestore.strategies)
-            setMsg({ kind: 'ok', text: `Restored ${pendingRestore.trades.length} trades.` })
+            setPropAccounts(pendingRestore.propAccounts)
+            setMsg({ kind: 'ok', text: `Restored ${pendingRestore.trades.length} trades and ${pendingRestore.propAccounts.length} prop accounts.` })
             setPendingRestore(null)
           }}
         />

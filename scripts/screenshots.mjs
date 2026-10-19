@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const url = pathToFileURL(path.join(root, 'dist-single/index.html')).href
+const url = pathToFileURL(path.resolve(root, process.env.SINGLE_DIR || 'dist-single', 'index.html')).href
 const out = (n) => path.join(root, 'screens', n)
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || 'chrome' })
 
@@ -27,8 +27,8 @@ async function loadSample(page) {
   await page.click('button:has-text("Load sample data")')
 }
 
-const desk = await browser.newPage({ viewport: { width: 1280, height: 800 } })
-const mob = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
+const desk = await browser.newPage({ viewport: { width: 1280, height: 800 }, timezoneId: 'America/New_York' })
+const mob = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: 'America/New_York' })
 
 // Phase 1
 await calcExample(desk); await desk.screenshot({ path: out('calculator-desktop.png') })
@@ -55,6 +55,36 @@ await mob.screenshot({ path: out('extra-stats-mobile-full.png'), fullPage: true 
 await mob.goto(url + '#/journal'); await mob.click('text=+ New trade'); await mob.waitForSelector('.modal')
 await mob.screenshot({ path: out('extra-trade-form-mobile.png') })
 await mob.keyboard.press('Escape'); await mob.goto(url + '#/journal/data'); await mob.evaluate(() => window.scrollTo(0, 0)); await mob.screenshot({ path: out('extra-data-mobile.png'), fullPage: true })
+
+// Phase 3: prop tracker (SAMPLE accounts come from the same "Load sample data" button)
+await desk.goto(url + '#/prop'); await desk.waitForSelector('.pcard')
+await desk.setViewportSize({ width: 1280, height: 1500 })
+await desk.evaluate(() => window.scrollTo(0, 0))
+await desk.screenshot({ path: out('prop-dashboard-desktop.png') })
+await desk.screenshot({ path: out('extra-prop-dashboard-desktop-full.png'), fullPage: true })
+await desk.setViewportSize({ width: 1280, height: 900 })
+await desk.click('button:has-text("+ New account")'); await desk.waitForSelector('.modal .acct-form')
+await desk.selectOption('.modal select[name=firm]', 'topstep')
+await desk.screenshot({ path: out('extra-prop-account-form-desktop.png') }); await desk.keyboard.press('Escape')
+await desk.goto(url + '#/journal'); await desk.waitForSelector('table.trades')
+await desk.locator('table.trades tbody tr').nth(0).locator('input[type=checkbox]').check()
+await desk.locator('table.trades tbody tr').nth(1).locator('input[type=checkbox]').check()
+await desk.evaluate(() => window.scrollTo(0, 0))
+await desk.screenshot({ path: out('extra-bulk-assign-desktop.png') })
+
+await mob.goto(url + '#/prop'); await mob.waitForSelector('.pcard'); await mob.evaluate(() => window.scrollTo(0, 0))
+await mob.screenshot({ path: out('prop-dashboard-mobile.png') })
+await mob.screenshot({ path: out('extra-prop-dashboard-mobile-full.png'), fullPage: true })
+await mob.goto(url + '#/calculator'); await mob.waitForSelector('[data-testid=calc-prop]')
+await mob.click('.picker-control'); await mob.fill('.picker-input', 'NQ'); await mob.keyboard.press('Enter')
+await mob.fill('#qty', '2'); await mob.fill('#move', '15')
+await mob.click('.pp-toggle')
+await mob.selectOption('#pp-acct', 'sample-acct-1')
+await mob.fill('#pp-stop', '15')
+await mob.waitForSelector('[data-testid=prop-risk]')
+await mob.evaluate(() => document.querySelector('[data-testid=calc-prop]').scrollIntoView({ block: 'center' }))
+await mob.screenshot({ path: out('calculator-prop-mobile.png') })
+await mob.screenshot({ path: out('extra-calculator-prop-mobile-full.png'), fullPage: true })
 
 // Remove sample data again so nothing lingers.
 for (const p of [desk, mob]) await p.evaluate(() => localStorage.clear())

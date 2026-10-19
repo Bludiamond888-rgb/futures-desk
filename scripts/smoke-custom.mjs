@@ -3,7 +3,7 @@ import { chromium } from 'playwright'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const url = pathToFileURL(path.join(root, 'dist-single/index.html')).href
+const url = pathToFileURL(path.resolve(root, process.env.SINGLE_DIR || 'dist-single', 'index.html')).href
 const b = await chromium.launch({ channel: process.env.PW_CHANNEL || 'chrome' })
 const p = await b.newPage({ viewport: { width: 1280, height: 900 } })
 await p.goto(url + '#/contracts'); await p.evaluate(() => localStorage.clear()); await p.reload()

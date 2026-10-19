@@ -156,6 +156,7 @@ describe('JSON backup', () => {
       trades: [{ ...mk({ symbol: 'ES' }), screenshot: 'data:image/jpeg;base64,abc' }],
       customContracts: [{ ...C.ES, symbol: 'MYX', custom: true }],
       strategies: ['ORB', 'Mine'],
+      propAccounts: [],
     }
     const b = parseBackup(JSON.stringify(makeBackup(data)))
     expect(b.trades).toEqual(data.trades); expect(b.customContracts).toEqual(data.customContracts); expect(b.strategies).toEqual(data.strategies)

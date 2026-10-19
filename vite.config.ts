@@ -64,7 +64,8 @@ export default defineConfig(({ mode }) => {
     base: './',
     plugins: [react(), ...(single ? [singleHtml(), viteSingleFile()] : [serviceWorker()])],
     publicDir: single ? false : 'public',
-    build: { outDir: single ? 'dist-single' : 'dist', emptyOutDir: true },
+    // OUT_DIR lets test builds go elsewhere (e.g. .build-dev) without touching the deployable dist/.
+    build: { outDir: path.join(process.env.OUT_DIR ?? '.', single ? 'dist-single' : 'dist'), emptyOutDir: true },
     test: { environment: 'node', include: ['src/**/*.test.ts'] },
   }
 })

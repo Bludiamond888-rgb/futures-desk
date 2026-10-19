@@ -8,7 +8,7 @@ import { computeTrade, newId, snapshotSpec } from './journal'
  */
 export const CSV_COLUMNS = [
   'id', 'datetime', 'symbol', 'side', 'qty', 'entry', 'exit', 'stop', 'fees', 'strategy', 'notes',
-  'tickSize', 'tickValue', 'currency', 'priceFormat', 'createdAt', 'updatedAt',
+  'tickSize', 'tickValue', 'currency', 'priceFormat', 'createdAt', 'updatedAt', 'accountId',
   'points', 'ticks', 'grossPnl', 'netPnl',
 ] as const
 
@@ -25,7 +25,7 @@ export function tradesToCSV(trades: Trade[]): string {
       id: t.id, datetime: t.datetime, symbol: t.symbol, side: t.side, qty: t.qty, entry: t.entry, exit: t.exit,
       stop: t.stop ?? '', fees: t.fees, strategy: t.strategy, notes: t.notes,
       tickSize: t.tickSize, tickValue: t.tickValue, currency: t.currency, priceFormat: t.priceFormat ?? '',
-      createdAt: t.createdAt, updatedAt: t.updatedAt,
+      createdAt: t.createdAt, updatedAt: t.updatedAt, accountId: t.accountId ?? '',
       points: c.points, ticks: c.ticks, grossPnl: c.gross, netPnl: c.net,
     }
     rows.push(CSV_COLUMNS.map((k) => esc(rec[k])).join(','))
@@ -117,6 +117,8 @@ export function tradesFromCSV(text: string, contracts: ContractSpec[]): ImportRe
       updatedAt: get(r, 'updatedAt').trim() || now,
     }
     if (priceFormat === '32nds' || priceFormat === 'decimal') t.priceFormat = priceFormat
+    const accountId = get(r, 'accountId').trim()
+    if (accountId) t.accountId = accountId
     out.push(t)
   })
   return { trades: out, errors }
