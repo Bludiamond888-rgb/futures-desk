@@ -25,6 +25,7 @@ Separately: `npm run build:pwa`, `npm run build:single`.
 - `npm test`: vitest unit tests (calc engine, spec sanity, P&L, stats, CSV round trip, JSON backup)
 - `npm run test:e2e`: Playwright smoke test (adds 3 trades, reloads, prop account create/bulk-assign/dashboard/calculator warning/backup, checks stats/filters/duplicate/delete, CSV + JSON round trips, screenshot attach, storage warning, SW offline, single-file build)
 - `npm run smoke`: both browser smoke tests
+- `npm run test:ios`: date/time input layout check in Playwright WebKit (iPhone descriptor) + Chromium mobile at 390×844. It checks the fields line up with the selects and don't overflow, and writes `screens/journal-filters-iphone.png` and `screens/stats-filters-iphone.png`. `STRESS=1` forces an iOS-like wide built-in date width. Needs `npx playwright install webkit` + `sudo npx playwright install-deps webkit`.
 - `npm run screens`: regenerate screenshots into `screens/` (loads SAMPLE data, then clears it)
 - Icons: `python3 scripts/make-icons.py` (Pillow)
 

@@ -13,7 +13,8 @@
     "smoke": "node scripts/smoke-custom.mjs && node scripts/smoke-journal.mjs",
     "build:pwa": "tsc -b && vite build",
     "build:single": "tsc -b && vite build --mode single",
-    "test:e2e": "node scripts/smoke-journal.mjs"
+    "test:e2e": "node scripts/smoke-journal.mjs",
+    "test:ios": "node scripts/check-ios-dates.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
