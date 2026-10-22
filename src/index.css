@@ -572,3 +572,48 @@ input.sl:focus { border-color: var(--neg); }
 .tpsl-box.tp b, .tpsl-box.tp i { color: var(--accent2); }
 .tpsl-box.sl { border-color: color-mix(in srgb, var(--neg) 40%, var(--line)); }
 .tpsl-box.sl b, .tpsl-box.sl i { color: var(--neg); }
+
+/* ═════════════ Calculator: compact rows + one-screen scroll lock (phones) ═════════════ */
+.inputs .qty-row .seg, .inputs .tpsl-inputs .seg { margin-top: 0; }
+.rr-line { display: grid !important; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rr-line div { display: flex; flex-direction: column; gap: 2px; }
+.rr-line div:last-child { text-align: right; }
+.rr-line b { text-align: inherit !important; font-size: 17px; }
+.spec-line b em { margin-left: 1px; }
+
+@media (max-width: 760px) {
+  html.calc-lock, html.calc-lock body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  .app.calc-lock { position: fixed; inset: 0; height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; }
+  .app.calc-lock .topbar { padding-top: calc(8px + env(safe-area-inset-top)); padding-bottom: 8px; flex: none; }
+  .app.calc-lock .logo { width: 24px; height: 24px; font-size: 13px; }
+  /* main is the only scroller, and only kicks in if the keyboard shrinks the viewport */
+  .app.calc-lock main { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    padding-top: 8px; padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
+  .calc .calc-grid { gap: 8px; }
+  .calc .panel { padding: 10px 12px; border-radius: 12px; }
+  .calc .inputs { gap: 0; }
+  .calc .field-label { font-size: 10.5px; margin: 0 0 4px; letter-spacing: .07em; }
+  .calc .inputs .row2 { gap: 8px; margin-top: 8px; }
+  .calc .picker-control { min-height: 42px; }
+  .calc .picker-value .sym { font-size: 16px; }
+  .calc #qty, .calc #tp, .calc #sl, .calc #entry { height: 42px; padding: 0 10px; font-size: 17px; }
+  .calc .stepper { grid-template-columns: 40px 1fr 40px; gap: 4px; }
+  .calc .stepper button { height: 42px; }
+  .calc .seg { padding: 3px; height: 42px; }
+  .calc .seg button { padding: 0 6px; font-size: 14px; }
+  .calc .hint { font-size: 11.5px; margin-top: 6px; line-height: 1.35; }
+  .calc .result-label { font-size: 12px; }
+  .calc .tpsl { margin-top: 6px; gap: 8px; }
+  .calc .tpsl-box { padding: 8px 10px; gap: 1px; border-radius: 10px; }
+  .calc .tpsl-box span { font-size: 10.5px; }
+  .calc .tpsl-box b { font-size: clamp(19px, 6vw, 26px); }
+  .calc .tpsl-box em { font-size: 12px; }
+  .calc .tpsl-box i { font-size: 13px; }
+  .calc .lines { margin-top: 6px; }
+  .calc .lines li { padding: 5px 0; font-size: 12.5px; }
+  .calc .lines li:last-child { border-bottom: 0; }
+  .calc .rr-line span { font-size: 11px; }
+  .calc .quote-note, .calc .warn, .calc .cur-note { font-size: 11px; margin-top: 4px; }
+  .calc .quote-note { display: none; }
+  .app.calc-lock .tabs.bottom { padding-top: 4px; padding-bottom: calc(4px + env(safe-area-inset-bottom)); }
+}

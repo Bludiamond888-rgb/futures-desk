@@ -52,9 +52,14 @@ export default function App() {
 
   const safeSymbol = all.some((c) => c.symbol === symbol) ? symbol : DEFAULT_CALC.symbol
   const { tab, sub, psub } = route
+  useEffect(() => {
+    const el = document.documentElement
+    el.classList.toggle('calc-lock', tab === 'calculator')
+    return () => el.classList.remove('calc-lock')
+  }, [tab])
 
   return (
-    <div className="app">
+    <div className={`app${tab === 'calculator' ? ' calc-lock' : ''}`}>
       <header className="topbar">
         <div className="brand"><span className="logo">F</span> Futures Calc</div>
         <nav className="tabs top">

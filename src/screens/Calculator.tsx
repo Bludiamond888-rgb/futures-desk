@@ -87,12 +87,27 @@ export function Calculator({ contracts, symbol, onSymbolChange, accounts = [], t
           <label className="field-label">Contract</label>
           <ContractPicker contracts={contracts} value={spec} onChange={(c) => onSymbolChange(c.symbol)} />
 
-          <label className="field-label" htmlFor="qty">Contracts</label>
-          <div className="stepper">
-            <button type="button" onClick={() => step(-1)} aria-label="Fewer contracts">−</button>
-            <input id="qty" inputMode="numeric" value={st.qty}
-              onChange={(e) => setSt({ ...st, qty: e.target.value })} className={qtyOk ? '' : 'bad'} />
-            <button type="button" onClick={() => step(1)} aria-label="More contracts">+</button>
+          <div className="row2 qty-row">
+            <div>
+              <label className="field-label" htmlFor="qty">Contracts</label>
+              <div className="stepper">
+                <button type="button" onClick={() => step(-1)} aria-label="Fewer contracts">−</button>
+                <input id="qty" inputMode="numeric" value={st.qty}
+                  onChange={(e) => setSt({ ...st, qty: e.target.value })} className={qtyOk ? '' : 'bad'} />
+                <button type="button" onClick={() => step(1)} aria-label="More contracts">+</button>
+              </div>
+            </div>
+            <div>
+              <label className="field-label">Units</label>
+              <div className="seg" role="radiogroup" aria-label="Move unit">
+                {(['points', 'ticks'] as MoveUnit[]).map((u) => (
+                  <button key={u} type="button" role="radio" aria-checked={st.unit === u}
+                    className={st.unit === u ? 'on' : ''} onClick={() => setUnit(u)}>
+                    {u === 'points' ? 'Points' : 'Ticks'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="row2 tpsl-inputs">
@@ -108,14 +123,6 @@ export function Calculator({ contracts, symbol, onSymbolChange, accounts = [], t
             </div>
           </div>
 
-          <div className="seg" role="radiogroup" aria-label="Move unit">
-            {(['points', 'ticks'] as MoveUnit[]).map((u) => (
-              <button key={u} type="button" role="radio" aria-checked={st.unit === u}
-                className={st.unit === u ? 'on' : ''} onClick={() => setUnit(u)}>
-                {u === 'points' ? 'Points' : 'Ticks'}
-              </button>
-            ))}
-          </div>
           {is32 && st.unit === 'points' && (
             <p className="hint">Treasury: 1 point = 1 full handle. You can type 32nds as <code>1-16</code> (= 1 16/32) or <code>0-08.5</code>.</p>
           )}
@@ -160,13 +167,14 @@ export function Calculator({ contracts, symbol, onSymbolChange, accounts = [], t
           {cur !== 'USD' && <div className="cur-note">Values in {cur} (contract currency)</div>}
 
           <ul className="lines">
-            <li><span>Reward : risk</span><b data-testid="rr">{r.rr != null ? `${r.rr.toFixed(2)} : 1` : '—'}</b></li>
-            <li><span>Breakeven win rate</span><b data-testid="bewr">{r.breakevenWinRate != null ? `${(r.breakevenWinRate * 100).toFixed(1)}%` : '—'}</b></li>
-            <li>
-              <span>Per tick, 1 contract</span>
-              <b>{formatMoney(spec.tickValue, cur)} <em>({spec.tickLabel ?? formatNumber(spec.tickSize, 9)})</em></b>
+            <li className="rr-line">
+              <div><span>Reward : risk</span><b data-testid="rr">{r.rr != null ? `${r.rr.toFixed(2)} : 1` : '—'}</b></div>
+              <div><span>Breakeven win rate</span><b data-testid="bewr">{r.breakevenWinRate != null ? `${(r.breakevenWinRate * 100).toFixed(1)}%` : '—'}</b></div>
             </li>
-            <li><span>Per point, 1 contract</span><b>{formatMoney(spec.pointValue, cur)}</b></li>
+            <li className="spec-line">
+              <span>1 contract</span>
+              <b>{formatMoney(spec.tickValue, cur)}<em>/tick ({spec.tickLabel ?? formatNumber(spec.tickSize, 9)})</em> · {formatMoney(spec.pointValue, cur)}<em>/pt</em></b>
+            </li>
           </ul>
           {(r.tp?.fractionalTicks || r.sl?.fractionalTicks) && <p className="warn">Note: a distance isn’t a whole number of ticks (tick = {formatNumber(spec.tickSize, 9)}).</p>}
           <p className="quote-note">{spec.quoteNotes}</p>
