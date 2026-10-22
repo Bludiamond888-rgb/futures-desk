@@ -45,7 +45,7 @@ export function parsePriceFile(text: string): PriceEntry[] {
   let o: unknown
   try { o = JSON.parse(text) } catch { throw new Error('Not valid JSON') }
   const list = Array.isArray(o) ? o : (o as { app?: string; prices?: unknown })?.app === 'futures-desk-prop-prices' ? (o as { prices: unknown }).prices : null
-  if (!Array.isArray(list)) throw new Error('Not a Futures Desk prop prices file')
+  if (!Array.isArray(list)) throw new Error('Not a Futures Calc prop prices file')
   for (const e of list) {
     if (!e || typeof e.id !== 'string' || typeof e.firm !== 'string' || !(e.size > 0) || !Number.isFinite(e.evalFee)) throw new Error('File contains an invalid price entry')
   }

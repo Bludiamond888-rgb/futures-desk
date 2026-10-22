@@ -1,4 +1,4 @@
-/* Futures Desk service worker — generated at build time (see vite.config.ts). */
+/* Futures Calc service worker — generated at build time (see vite.config.ts). */
 const VERSION = '__VERSION__'
 const CACHE = `futures-desk-${VERSION}`
 const PRECACHE = __PRECACHE__

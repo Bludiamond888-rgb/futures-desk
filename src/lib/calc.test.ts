@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculate, formatMoney, formatTreasury, parseMove, parseTreasury } from './calc'
+import { calculate, formatMoney, formatTreasury, parseMove, parseTreasury , calculateTpSl, roundToTick } from './calc'
 import { CONTRACTS, CONTRACT_BY_SYMBOL as C } from '../data/contracts'
 
 describe('calculate – required examples', () => {
@@ -146,5 +146,46 @@ describe('parseMove / formatting', () => {
     expect(formatMoney(100, 'USD')).toBe('$100.00')
     expect(formatMoney(15.625, 'USD')).toBe('$15.625')
     expect(formatMoney(-1234.5, 'EUR')).toBe('−€1,234.50')
+  })
+})
+
+describe('take profit / stop loss', () => {
+  it('ES 2 contracts, TP 10 pts, SL 5 pts', () => {
+    const r = calculateTpSl(C.ES, 2, 10, 5, 'points')
+    expect(r.tp!.value).toBe(1000)
+    expect(r.tp!.ticks).toBe(40)
+    expect(r.sl!.value).toBe(500)
+    expect(r.sl!.ticks).toBe(20)
+    expect(r.rr).toBe(2)
+    expect(r.breakevenWinRate).toBeCloseTo(1 / 3, 6)
+    expect(r.tpPrice).toBeNull()
+  })
+  it('ticks unit works and negatives are treated as sizes', () => {
+    const r = calculateTpSl(C.MNQ, 1, 40, -20, 'ticks')
+    expect(r.tp!.value).toBe(20)
+    expect(r.sl!.value).toBe(10)
+    expect(r.rr).toBe(2)
+  })
+  it('either side may be empty', () => {
+    const a = calculateTpSl(C.ES, 1, NaN, 4, 'points')
+    expect(a.tp).toBeNull(); expect(a.sl!.value).toBe(200); expect(a.rr).toBeNull(); expect(a.breakevenWinRate).toBeNull()
+    const b = calculateTpSl(C.ES, 1, null, null, 'points', 5000)
+    expect(b.tp).toBeNull(); expect(b.sl).toBeNull(); expect(b.tpPrice).toBeNull(); expect(b.slPrice).toBeNull()
+  })
+  it('zero stop → no ratio', () => {
+    expect(calculateTpSl(C.ES, 1, 4, 0, 'points').rr).toBeNull()
+  })
+  it('long and short price levels', () => {
+    const l = calculateTpSl(C.ES, 1, 10, 5, 'points', 5000, 'long')
+    expect(l.tpPrice).toBe(5010); expect(l.slPrice).toBe(4995)
+    const s = calculateTpSl(C.ES, 1, 10, 5, 'points', 5000, 'short')
+    expect(s.tpPrice).toBe(4990); expect(s.slPrice).toBe(5005)
+  })
+  it('price levels rounded to tick size', () => {
+    const r = calculateTpSl(C.ES, 1, 10, 5, 'points', 5000.1, 'long')
+    expect(r.tpPrice).toBe(5010); expect(r.slPrice).toBe(4995)
+    expect(roundToTick(1.08437, 0.00005)).toBe(1.08435)
+    const zn = calculateTpSl(C.ZN, 1, 3, 2, 'ticks', 110.5, 'long')
+    expect(zn.tpPrice).toBe(110.546875)
   })
 })

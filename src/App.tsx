@@ -56,7 +56,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand"><span className="logo">F</span> Futures Desk</div>
+        <div className="brand"><span className="logo">F</span> Futures Calc</div>
         <nav className="tabs top">
           {TABS.map((t) => (
             <button key={t.id} className={tab === t.id ? 'on' : ''} onClick={() => go(t.id)}>{t.label}</button>

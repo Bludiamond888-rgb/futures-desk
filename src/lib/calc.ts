@@ -123,3 +123,44 @@ export function formatNumber(n: number, maxFrac = 8): string {
   if (!Number.isFinite(n)) return '—'
   return n.toLocaleString('en-US', { maximumFractionDigits: maxFrac })
 }
+
+// ───────────── Take profit / stop loss ─────────────
+
+export type Side = 'long' | 'short'
+
+export interface TpSlResult {
+  tp: CalcResult | null
+  sl: CalcResult | null
+  /** reward ÷ risk (null unless both sides > 0). */
+  rr: number | null
+  /** Win rate needed to break even = risk / (reward + risk), as a fraction 0–1. */
+  breakevenWinRate: number | null
+  tpPrice: number | null
+  slPrice: number | null
+}
+
+/** Round a price to the nearest valid tick. */
+export function roundToTick(price: number, tickSize: number): number {
+  return clean(Math.round(clean(price / tickSize, 6)) * tickSize)
+}
+
+/**
+ * TP/SL distances are entered as positive sizes (sign ignored). Either may be NaN/null (empty).
+ * If an entry price is given, price levels are computed in the trade direction and rounded to tick size.
+ */
+export function calculateTpSl(
+  spec: SpecLike, contracts: number, tp: number | null, sl: number | null, unit: MoveUnit,
+  entry?: number | null, side: Side = 'long',
+): TpSlResult {
+  const ok = (n: number | null | undefined): n is number => n != null && Number.isFinite(n)
+  const tpR = ok(tp) ? calculate(spec, contracts, Math.abs(tp), unit) : null
+  const slR = ok(sl) ? calculate(spec, contracts, Math.abs(sl), unit) : null
+  const rr = tpR && slR && slR.points > 0 && tpR.points > 0 ? clean(tpR.points / slR.points, 6) : null
+  const breakevenWinRate = tpR && slR && tpR.points + slR.points > 0 && slR.points > 0 && tpR.points > 0
+    ? clean(slR.points / (tpR.points + slR.points), 6) : null
+  const dir = side === 'long' ? 1 : -1
+  const hasEntry = ok(entry)
+  const tpPrice = hasEntry && tpR ? roundToTick(entry + dir * tpR.points, spec.tickSize) : null
+  const slPrice = hasEntry && slR ? roundToTick(entry - dir * slR.points, spec.tickSize) : null
+  return { tp: tpR, sl: slR, rr, breakevenWinRate, tpPrice, slPrice }
+}

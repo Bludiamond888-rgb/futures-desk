@@ -1,4 +1,4 @@
-# Futures Desk
+# Futures Calc
 
 React + TypeScript + Vite. Dark trader-style UI. All data stays on the device (localStorage).
 

@@ -1,6 +1,6 @@
 {
-  "name": "Futures Desk",
-  "short_name": "Futures",
+  "name": "Futures Calc",
+  "short_name": "Futures Calc",
   "description": "Futures tick/point calculator, contract specs and trade journal. All data stays on your device.",
   "id": "./",
   "start_url": "./#/calculator",

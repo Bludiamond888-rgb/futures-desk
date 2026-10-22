@@ -23,7 +23,7 @@ export function parseBackup(text: string): Backup {
   let o: unknown
   try { o = JSON.parse(text) } catch { throw new Error('Not valid JSON') }
   const b = o as Partial<Backup>
-  if (!b || b.app !== BACKUP_APP) throw new Error('Not a Futures Desk backup file')
+  if (!b || b.app !== BACKUP_APP) throw new Error('Not a Futures Calc backup file')
   if (typeof b.version !== 'number' || b.version > BACKUP_VERSION) throw new Error('Unsupported backup version')
   if (!Array.isArray(b.trades) || !Array.isArray(b.customContracts) || !Array.isArray(b.strategies)) {
     throw new Error('Backup is missing trades, customContracts or strategies')

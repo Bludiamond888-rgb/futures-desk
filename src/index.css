@@ -549,3 +549,26 @@ p.pp-warn[data-testid=over-max] { padding: 10px 12px; border-radius: 10px; backg
 .prop-prices .screen-title { margin-bottom: 12px; }
 .pp-sizes, .pp-chips { flex-wrap: wrap !important; overflow: visible !important; margin-left: 0 !important; margin-right: 0 !important; padding: 0 !important; }
 .pp-form input[type=url] { background: var(--bg2); color: var(--text); }
+
+/* TP / SL calculator */
+#tp, #sl, #entry { font-family: var(--mono); font-size: 20px; font-weight: 600; }
+.tpsl-inputs { margin-top: 14px; }
+.field-label.tp { color: var(--accent); }
+.field-label.sl { color: var(--neg); }
+input.tp { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+input.sl { border-color: color-mix(in srgb, var(--neg) 45%, var(--line)); }
+input.tp:focus { border-color: var(--accent); }
+input.sl:focus { border-color: var(--neg); }
+.entry-row { margin-top: 14px; }
+.entry-row .seg { margin-top: 0; }
+.field-label .opt { font-style: normal; color: var(--dim); font-weight: 400; }
+.tpsl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.tpsl-box { display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); min-width: 0; }
+.tpsl-box span { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.tpsl-box b { font-family: var(--mono); font-size: clamp(22px, 4vw, 34px); font-weight: 700; letter-spacing: -.5px; word-break: break-all; }
+.tpsl-box em { font-style: normal; font-family: var(--mono); color: var(--muted); font-size: 13px; }
+.tpsl-box i { font-style: normal; font-family: var(--mono); font-size: 15px; font-weight: 600; }
+.tpsl-box.tp { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.tpsl-box.tp b, .tpsl-box.tp i { color: var(--accent2); }
+.tpsl-box.sl { border-color: color-mix(in srgb, var(--neg) 40%, var(--line)); }
+.tpsl-box.sl b, .tpsl-box.sl i { color: var(--neg); }
