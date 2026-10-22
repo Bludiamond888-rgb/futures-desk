@@ -655,3 +655,9 @@ input.sl:focus { border-color: var(--neg); }
   .calc .rr-line span { font-size: clamp(11px, calc(5.92px + 0.00769 * var(--avail-h)), 13px); }
   .calc .rr-line b { font-size: clamp(17px, calc(6.85px + 0.01538 * var(--avail-h)), 21px); }
 }
+
+/* see detectShortViewport() in main.tsx */
+@media (max-width: 760px) {
+  html.ios-short-vp .tabs.bottom, html.ios-short-vp .app.calc-lock .tabs.bottom { padding-bottom: 8px; }
+  html.ios-short-vp .app.calc-lock { --avail-h: calc(100dvh - env(safe-area-inset-top)); }
+}

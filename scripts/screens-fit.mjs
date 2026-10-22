@@ -25,6 +25,7 @@ for (const [tag, name] of DEVS) {
     for (const sh of document.styleSheets) { try { for (const r of [...sh.cssRules]) walk(r) } catch {} }
     function walk(r) { if (r.cssRules) for (const c of r.cssRules) walk(c); if (r.style) for (const k of r.style) { const v = r.style.getPropertyValue(k); if (v.includes('safe-area-inset')) r.style.setProperty(k, v.replace(/env\(safe-area-inset-top\)/g, sa.top + 'px').replace(/env\(safe-area-inset-bottom\)/g, sa.bottom + 'px')) } }
   }) }, sa)
+  if (name === '16PM PWA short') await p.addInitScript(() => Object.defineProperty(navigator, 'standalone', { get: () => true }))
   await p.goto(url + '#/calculator'); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForSelector('#tp')
   const shot = async (state) => {
     const m = await p.evaluate(() => {
