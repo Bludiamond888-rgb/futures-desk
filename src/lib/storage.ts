@@ -12,6 +12,8 @@ export const STORAGE_KEYS = {
   filters: 'fta.journal.filters.v1',
   propAccounts: 'fta.propAccounts.v1',
   calcProp: 'fta.calculator.prop.v1',
+  propPrices: 'fta.propPrices.v1',
+  propPriceSize: 'fta.propPrices.size.v1',
 } as const
 
 /** Browsers give an origin roughly 5 MB (≈5M UTF-16 chars) of localStorage. */

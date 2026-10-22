@@ -3,6 +3,9 @@ import { Calculator, DEFAULT_CALC } from './screens/Calculator'
 import { Contracts } from './screens/Contracts'
 import { Journal, type JournalTab } from './screens/Journal'
 import { Prop } from './screens/Prop'
+import { PropPrices } from './screens/PropPrices'
+import { SEED_PRICES } from './data/propPricesSeed'
+import type { PriceEntry } from './lib/propPrices'
 import { EMPTY_FILTERS } from './lib/journal'
 import { samplePropData, sampleTrades } from './lib/sample'
 import { clearStorageError, STORAGE_KEYS, useContracts, useLocalStorage, usePropAccounts, useStorageHealth, useStrategies, useTrades, writeJSON } from './lib/storage'
@@ -15,12 +18,14 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'prop', label: 'Prop', icon: '◎' },
 ]
 const SUBS: JournalTab[] = ['trades', 'stats', 'data']
+type PropSub = 'accounts' | 'prices'
 
-function parseHash(): { tab: Tab; sub: JournalTab } {
+function parseHash(): { tab: Tab; sub: JournalTab; psub: PropSub } {
   const [a, b] = location.hash.replace(/^#\/?/, '').split('/')
   const tab = TABS.find((t) => t.id === a)?.id ?? 'calculator'
   const sub = SUBS.includes(b as JournalTab) ? (b as JournalTab) : 'trades'
-  return { tab, sub }
+  const psub: PropSub = tab === 'prop' && b === 'prices' ? 'prices' : 'accounts'
+  return { tab, sub, psub }
 }
 
 export default function App() {
@@ -31,20 +36,22 @@ export default function App() {
   const { strategies, setStrategies } = useStrategies()
   const { accounts, setAccounts, upsertAccount, removeAccount } = usePropAccounts()
   const health = useStorageHealth()
+  const [prices, setPrices] = useLocalStorage<PriceEntry[]>(STORAGE_KEYS.propPrices, SEED_PRICES)
+  const [priceSize, setPriceSize] = useLocalStorage<number>(STORAGE_KEYS.propPriceSize, 50_000)
 
   useEffect(() => {
     const on = () => setRoute(parseHash())
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])
-  const go = (tab: Tab, sub: JournalTab = 'trades') => {
-    location.hash = tab === 'journal' && sub !== 'trades' ? `/journal/${sub}` : `/${tab}`
-    setRoute({ tab, sub })
+  const go = (tab: Tab, sub: JournalTab = 'trades', psub: PropSub = 'accounts') => {
+    location.hash = tab === 'journal' && sub !== 'trades' ? `/journal/${sub}` : tab === 'prop' && psub === 'prices' ? '/prop/prices' : `/${tab}`
+    setRoute({ tab, sub, psub })
     window.scrollTo(0, 0)
   }
 
   const safeSymbol = all.some((c) => c.symbol === symbol) ? symbol : DEFAULT_CALC.symbol
-  const { tab, sub } = route
+  const { tab, sub, psub } = route
 
   return (
     <div className="app">
@@ -79,6 +86,20 @@ export default function App() {
           />
         )}
         {tab === 'prop' && (
+          <div className="prop-subnav">
+            <div className="subtabs" role="tablist" aria-label="Prop section">
+              <button role="tab" aria-selected={psub === 'accounts'} className={psub === 'accounts' ? 'on' : ''} onClick={() => go('prop', 'trades', 'accounts')}>Accounts</button>
+              <button role="tab" aria-selected={psub === 'prices'} className={psub === 'prices' ? 'on' : ''} onClick={() => go('prop', 'trades', 'prices')}>Prices</button>
+            </div>
+          </div>
+        )}
+        {tab === 'prop' && psub === 'prices' && (
+          <section className="screen prop-prices">
+            <h2 className="screen-title">Prop firm prices</h2>
+            <PropPrices prices={prices} setPrices={setPrices} size={priceSize} setSize={setPriceSize} />
+          </section>
+        )}
+        {tab === 'prop' && psub === 'accounts' && (
           <Prop accounts={accounts} upsertAccount={upsertAccount} removeAccount={removeAccount}
             trades={trades} setTrades={setTrades}
             onViewTrades={(id) => { writeJSON(STORAGE_KEYS.filters, { ...EMPTY_FILTERS, account: id }); go('journal') }}

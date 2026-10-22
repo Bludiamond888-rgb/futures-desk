@@ -515,3 +515,37 @@ p.pp-warn[data-testid=over-max] { padding: 10px 12px; border-radius: 10px; backg
 
 .prop-chart .eq-y { width: 56px; }
 .prop-chart .eq-x.right { right: 8px; }
+
+/* ── Prop firm prices ── */
+.pprices { display: flex; flex-direction: column; gap: 14px; }
+.pp-top .chips { margin: 4px 0 14px; }
+.chip.big { font-size: 16px; padding: 10px 16px; }
+.pp-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pp-list { display: flex; flex-direction: column; gap: 12px; }
+.pp-card.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.pp-head { display: flex; gap: 12px; align-items: flex-start; }
+.pp-rank { color: var(--dim); font-weight: 700; font-size: 15px; padding-top: 3px; }
+.pp-title { flex: 1; min-width: 0; }
+.pp-title h3 { margin: 0 0 4px; font-size: 18px; }
+.pp-title p { margin: 0; font-size: 13px; }
+.pp-total { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.pp-total b { font-size: 26px; color: var(--accent2); }
+.pp-total small { font-size: 11px; }
+.best-badge { background: var(--accent); border-color: var(--accent); color: #04120c; }
+.pp-formula { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 12px; padding: 10px 12px; background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.pp-formula small { color: var(--muted); }
+.pp-formula .eq { font-weight: 700; color: var(--text); }
+.pp-notes { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.pp-notes summary { cursor: pointer; font-weight: 600; }
+.pp-notes p { line-height: 1.5; margin: 6px 0 0; }
+.pp-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; flex-wrap: wrap; }
+.pp-btns { display: flex; gap: 6px; align-items: center; }
+.pp-btns a.btn { text-decoration: none; color: var(--text); }
+.pp-form .span2 { grid-column: 1 / -1; }
+.pp-chips { margin: 6px 0 8px; }
+.pp-form textarea { width: 100%; }
+@media (max-width: 560px) { .pp-total b { font-size: 22px; } .pp-title h3 { font-size: 16px; } }
+.prop-subnav { margin-bottom: 16px; }
+.prop-prices .screen-title { margin-bottom: 12px; }
+.pp-sizes, .pp-chips { flex-wrap: wrap !important; overflow: visible !important; margin-left: 0 !important; margin-right: 0 !important; padding: 0 !important; }
+.pp-form input[type=url] { background: var(--bg2); color: var(--text); }
