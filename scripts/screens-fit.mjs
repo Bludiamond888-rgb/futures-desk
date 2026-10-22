@@ -25,16 +25,15 @@ for (const [tag, name] of DEVS) {
     for (const sh of document.styleSheets) { try { for (const r of [...sh.cssRules]) walk(r) } catch {} }
     function walk(r) { if (r.cssRules) for (const c of r.cssRules) walk(c); if (r.style) for (const k of r.style) { const v = r.style.getPropertyValue(k); if (v.includes('safe-area-inset')) r.style.setProperty(k, v.replace(/env\(safe-area-inset-top\)/g, sa.top + 'px').replace(/env\(safe-area-inset-bottom\)/g, sa.bottom + 'px')) } }
   }) }, sa)
-  if (name === '16PM PWA short') await p.addInitScript(() => Object.defineProperty(navigator, 'standalone', { get: () => true }))
   await p.goto(url + '#/calculator'); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForSelector('#tp')
   const shot = async (state) => {
     const m = await p.evaluate(() => {
       const main = document.querySelector('main'), bar = document.querySelector('.tabs.bottom')
       const last = document.querySelector('.calc .inputs').getBoundingClientRect().bottom
       return { docScroll: document.scrollingElement.scrollHeight - innerHeight, mainOver: main.scrollHeight - main.clientHeight,
-        gapAboveBar: Math.round(bar.getBoundingClientRect().top - last), barGapBelow: Math.max(0, Math.round((screen.height > innerHeight && navigator.standalone ? screen.height : innerHeight) - bar.getBoundingClientRect().bottom)), barH: Math.round(bar.getBoundingClientRect().height), fieldH: Math.round(document.querySelector('#tp').getBoundingClientRect().height), vh: innerHeight }
+        gapAboveBar: Math.round(bar.getBoundingClientRect().top - last), barGapBelow: Math.round(innerHeight - bar.getBoundingClientRect().bottom), rootBottom: Math.round(document.querySelector('.app').getBoundingClientRect().bottom), vvH: Math.round(visualViewport.height), barH: Math.round(bar.getBoundingClientRect().height), fieldH: Math.round(document.querySelector('#tp').getBoundingClientRect().height), vh: innerHeight }
     })
-    const ok = m.docScroll <= 0 && m.mainOver <= 0 && m.gapAboveBar >= 0 && m.gapAboveBar <= 40 && m.barGapBelow === 0
+    const ok = m.docScroll <= 0 && m.mainOver <= 0 && m.gapAboveBar >= 0 && m.gapAboveBar <= 40 && m.barGapBelow === 0 && m.rootBottom === m.vh && m.vvH === m.vh
     if (!ok) bad++
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${name} ${state}`, JSON.stringify(m))
     await p.screenshot({ path: path.join(root, 'screens', `fit-${tag}-${state}.png`) })

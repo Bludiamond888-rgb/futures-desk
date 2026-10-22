@@ -20,7 +20,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; min-height: 100%; background: var(--bg); }
+html { background: #10161d; }
+html, body { margin: 0; height: 100%; min-height: 100%; }
+body { background: var(--bg); }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 code { white-space: nowrap; font-family: var(--mono); background: var(--panel2); padding: 1px 5px; border-radius: 5px; font-size: .9em; }
@@ -620,8 +622,8 @@ input.sl:focus { border-color: var(--neg); }
 
 /* ── Calculator: scale with available height (compact on ~660px viewports, roomier on tall phones) ── */
 @media (max-width: 760px) {
-  .app.calc-lock { top: 0; left: 0; right: 0; bottom: auto; height: var(--app-h, 100dvh);
-    --avail-h: calc(var(--app-h, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .app.calc-lock { position: fixed; top: 0; left: 0; right: 0; bottom: 0; height: auto; min-height: 0;
+    --avail-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
   /* match the tab bar so no darker band can ever show below it */
   html.calc-lock, html.calc-lock body { background: #10161d; }
   /* tab bar is the last flex item, so it always sits flush at the bottom with safe-area padding */

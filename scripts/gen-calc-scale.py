@@ -7,8 +7,8 @@ def L(a,b):
     return f"clamp({a}px, calc({round(a-660*k,2)}px + {round(k,5)} * var(--avail-h)), {b}px)"
 s+=f"""/* ── Calculator: scale with available height (compact on ~660px viewports, roomier on tall phones) ── */
 @media (max-width: 760px) {{
-  .app.calc-lock {{ top: 0; left: 0; right: 0; bottom: auto; height: var(--app-h, 100dvh);
-    --avail-h: calc(var(--app-h, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }}
+  .app.calc-lock {{ position: fixed; top: 0; left: 0; right: 0; bottom: 0; height: auto; min-height: 0;
+    --avail-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }}
   /* match the tab bar so no darker band can ever show below it */
   html.calc-lock, html.calc-lock body {{ background: #10161d; }}
   /* tab bar is the last flex item, so it always sits flush at the bottom with safe-area padding */
