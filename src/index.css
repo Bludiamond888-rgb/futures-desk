@@ -617,3 +617,35 @@ input.sl:focus { border-color: var(--neg); }
   .calc .quote-note { display: none; }
   .app.calc-lock .tabs.bottom { padding-top: 4px; padding-bottom: calc(4px + env(safe-area-inset-bottom)); }
 }
+
+/* ── Calculator: scale with available height (compact on ~660px viewports, roomier on tall phones) ── */
+@media (max-width: 760px) {
+  .app.calc-lock { inset: 0; height: auto; --avail-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  /* tab bar is the last flex item, so it always sits flush at the bottom with safe-area padding */
+  .app.calc-lock .tabs.bottom { position: relative; flex: none; bottom: auto; }
+  .app.calc-lock main { display: flex; flex-direction: column; padding-top: clamp(8px, calc(-12.31px + 0.03077 * var(--avail-h)), 16px); padding-bottom: clamp(8px, calc(-12.31px + 0.03077 * var(--avail-h)), 16px); }
+  .calc { flex: 1 0 auto; display: flex; flex-direction: column; }
+  .calc .calc-grid { flex: 1 0 auto; display: flex; flex-direction: column; align-items: stretch; gap: clamp(8px, calc(-7.23px + 0.02308 * var(--avail-h)), 14px); }
+  .calc .result { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: space-evenly; }
+  .calc .inputs { flex: 1.4 0 auto; justify-content: space-between; }
+  .calc .panel { padding: clamp(10px, calc(-5.23px + 0.02308 * var(--avail-h)), 16px) clamp(12px, calc(1.85px + 0.01538 * var(--avail-h)), 16px); }
+  .calc .field-label { font-size: clamp(10.5px, calc(5.42px + 0.00769 * var(--avail-h)), 12.5px); margin-bottom: clamp(4px, calc(-3.62px + 0.01154 * var(--avail-h)), 7px); }
+  .calc .inputs .row2 { gap: clamp(8px, calc(-2.15px + 0.01538 * var(--avail-h)), 12px); margin-top: clamp(8px, calc(-7.23px + 0.02308 * var(--avail-h)), 14px); }
+  .calc #qty, .calc #tp, .calc #sl, .calc #entry, .calc .stepper button, .calc .seg { height: clamp(42px, calc(6.46px + 0.05385 * var(--avail-h)), 56px); }
+  .calc .picker-control { min-height: clamp(42px, calc(6.46px + 0.05385 * var(--avail-h)), 56px); }
+  .calc #qty, .calc #tp, .calc #sl, .calc #entry { font-size: clamp(17px, calc(6.85px + 0.01538 * var(--avail-h)), 21px); }
+  .calc .stepper { grid-template-columns: clamp(40px, calc(9.54px + 0.04615 * var(--avail-h)), 52px) 1fr clamp(40px, calc(9.54px + 0.04615 * var(--avail-h)), 52px); }
+  .calc .seg button, .calc .picker-value { font-size: clamp(14px, calc(7.65px + 0.00962 * var(--avail-h)), 16.5px); }
+  .calc .picker-value .sym { font-size: clamp(16px, calc(8.38px + 0.01154 * var(--avail-h)), 19px); }
+  .calc .result-label { font-size: clamp(12px, calc(5.65px + 0.00962 * var(--avail-h)), 14.5px); }
+  .calc .tpsl { margin-top: clamp(6px, calc(-9.23px + 0.02308 * var(--avail-h)), 12px); gap: clamp(8px, calc(-2.15px + 0.01538 * var(--avail-h)), 12px); }
+  .calc .tpsl-box { padding: clamp(8px, calc(-7.23px + 0.02308 * var(--avail-h)), 14px) clamp(10px, calc(-0.15px + 0.01538 * var(--avail-h)), 14px); gap: clamp(1px, calc(-6.62px + 0.01154 * var(--avail-h)), 4px); }
+  .calc .tpsl-box span { font-size: clamp(10.5px, calc(5.42px + 0.00769 * var(--avail-h)), 12.5px); }
+  .calc .tpsl-box b { font-size: clamp(19px, min(calc(-8.46px + 0.04615 * var(--avail-h)), 14cqi), 34px); white-space: nowrap; }
+  .calc .tpsl-box { container-type: inline-size; }
+  .calc .tpsl-box em, .calc .tpsl-box i { font-size: clamp(12px, calc(3.12px + 0.01346 * var(--avail-h)), 15.5px); }
+  .calc .lines { margin-top: clamp(6px, calc(-4.15px + 0.01538 * var(--avail-h)), 10px); }
+  .calc .lines li { padding: clamp(5px, calc(-5.15px + 0.01538 * var(--avail-h)), 9px) 0; font-size: clamp(12.5px, calc(7.42px + 0.00769 * var(--avail-h)), 14.5px); }
+  .calc .rr-line span { font-size: clamp(11px, calc(5.92px + 0.00769 * var(--avail-h)), 13px); }
+  .calc .rr-line b { font-size: clamp(17px, calc(6.85px + 0.01538 * var(--avail-h)), 21px); }
+}

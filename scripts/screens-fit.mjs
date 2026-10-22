@@ -6,20 +6,32 @@ import { serve } from './serve.mjs'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const { server, url } = await serve(path.join(root, 'dist'))
 const b = await webkit.launch()
-const DEVS = [['se', 'iPhone SE (3rd gen)'], ['13mini', 'iPhone 13 Mini'], ['15pro', 'iPhone 15 Pro']]
+const base = devices['iPhone 15 Pro Max']
+devices['16PM Safari'] = { ...base, viewport: { width: 440, height: 800 }, screen: { width: 440, height: 956 } }
+devices['16PM PWA'] = { ...base, viewport: { width: 440, height: 956 }, screen: { width: 440, height: 956 } }
+const SAFE = { '16PM PWA': { top: 62, bottom: 34 } }
+const DEVS = [['se', 'iPhone SE (3rd gen)'], ['13mini', 'iPhone 13 Mini'], ['15pro', 'iPhone 15 Pro'], ['16promax-safari', '16PM Safari'], ['16promax-pwa', '16PM PWA']]
+const ONLY = process.env.ONLY
 let bad = 0
 for (const [tag, name] of DEVS) {
+  if (ONLY && !tag.includes(ONLY)) continue
   const ctx = await b.newContext({ ...devices[name], serviceWorkers: 'block' })
   const p = await ctx.newPage()
+  const sa = SAFE[name]
+    if (sa) await p.addInitScript((sa) => { document.addEventListener('DOMContentLoaded', () => {
+    // WebKit headless has no notch: emulate env(safe-area-inset-*) by rewriting it in stylesheets
+    for (const sh of document.styleSheets) { try { for (const r of [...sh.cssRules]) walk(r) } catch {} }
+    function walk(r) { if (r.cssRules) for (const c of r.cssRules) walk(c); if (r.style) for (const k of r.style) { const v = r.style.getPropertyValue(k); if (v.includes('safe-area-inset')) r.style.setProperty(k, v.replace(/env\(safe-area-inset-top\)/g, sa.top + 'px').replace(/env\(safe-area-inset-bottom\)/g, sa.bottom + 'px')) } }
+  }) }, sa)
   await p.goto(url + '#/calculator'); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForSelector('#tp')
   const shot = async (state) => {
     const m = await p.evaluate(() => {
       const main = document.querySelector('main'), bar = document.querySelector('.tabs.bottom')
       const last = document.querySelector('.calc .inputs').getBoundingClientRect().bottom
       return { docScroll: document.scrollingElement.scrollHeight - innerHeight, mainOver: main.scrollHeight - main.clientHeight,
-        gapAboveBar: Math.round(bar.getBoundingClientRect().top - last), vh: innerHeight }
+        gapAboveBar: Math.round(bar.getBoundingClientRect().top - last), barGapBelow: Math.round(innerHeight - bar.getBoundingClientRect().bottom), fieldH: Math.round(document.querySelector('#tp').getBoundingClientRect().height), vh: innerHeight }
     })
-    const ok = m.docScroll <= 0 && m.mainOver <= 0 && m.gapAboveBar >= 0
+    const ok = m.docScroll <= 0 && m.mainOver <= 0 && m.gapAboveBar >= 0 && m.gapAboveBar <= 40 && m.barGapBelow === 0
     if (!ok) bad++
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${name} ${state}`, JSON.stringify(m))
     await p.screenshot({ path: path.join(root, 'screens', `fit-${tag}-${state}.png`) })
