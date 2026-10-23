@@ -23,18 +23,17 @@ for (const [tag, name] of DEVS) {
     if (sa) await p.addInitScript((sa) => { document.addEventListener('DOMContentLoaded', () => {
     // WebKit headless has no notch: emulate env(safe-area-inset-*) by rewriting it in stylesheets
     for (const sh of document.styleSheets) { try { for (const r of [...sh.cssRules]) walk(r) } catch {} }
-    function walk(r) { if (r.cssRules) for (const c of r.cssRules) walk(c); if (r.style) for (const k of r.style) { const v = r.style.getPropertyValue(k); if (v.includes('safe-area-inset')) r.style.setProperty(k, v.replace(/env\(safe-area-inset-top\)/g, sa.top + 'px').replace(/env\(safe-area-inset-bottom\)/g, sa.bottom + 'px')) } }
+    function walk(r) { if (r.cssRules) for (const c of r.cssRules) walk(c); if (r.style && r.style.cssText.includes('safe-area-inset')) r.style.cssText = r.style.cssText.replace(/env\(safe-area-inset-top\)/g, sa.top + 'px').replace(/env\(safe-area-inset-bottom\)/g, sa.bottom + 'px') }
   }) }, sa)
-  if (name === '16PM PWA short') await p.addInitScript(() => Object.defineProperty(navigator, 'standalone', { get: () => true }))
   await p.goto(url + '#/calculator'); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForSelector('#tp')
   const shot = async (state) => {
     const m = await p.evaluate(() => {
       const main = document.querySelector('main'), bar = document.querySelector('.tabs.bottom')
       const last = document.querySelector('.calc .inputs').getBoundingClientRect().bottom
       return { docScroll: document.scrollingElement.scrollHeight - innerHeight, mainOver: main.scrollHeight - main.clientHeight,
-        gapAboveBar: Math.round(bar.getBoundingClientRect().top - last), barGapBelow: Math.round(innerHeight - bar.getBoundingClientRect().bottom), rootBottom: Math.round(document.querySelector('.app').getBoundingClientRect().bottom), vvH: Math.round(visualViewport.height), barH: Math.round(bar.getBoundingClientRect().height), fieldH: Math.round(document.querySelector('#tp').getBoundingClientRect().height), vh: innerHeight }
+        gapAboveBar: Math.round(bar.getBoundingClientRect().top - last), barGapBelow: Math.round(innerHeight - bar.getBoundingClientRect().bottom), rootBottom: Math.round(document.querySelector('.app').getBoundingClientRect().bottom), barTop: Math.round(bar.getBoundingClientRect().top), vvH: Math.round(visualViewport.height), barH: Math.round(bar.getBoundingClientRect().height), fieldH: Math.round(document.querySelector('#tp').getBoundingClientRect().height), vh: innerHeight }
     })
-    const ok = m.docScroll <= 0 && m.mainOver <= 0 && m.gapAboveBar >= 0 && m.gapAboveBar <= 40 && m.barGapBelow === 0 && m.rootBottom === m.vh && m.vvH === m.vh
+    const ok = m.docScroll <= 0 && m.mainOver <= 0 && m.gapAboveBar >= 0 && m.gapAboveBar <= 40 && m.barGapBelow === 0 && m.rootBottom === m.barTop && m.vvH === m.vh
     if (!ok) bad++
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${name} ${state}`, JSON.stringify(m))
     await p.screenshot({ path: path.join(root, 'screens', `fit-${tag}-${state}.png`) })
@@ -57,5 +56,22 @@ for (const [tag, name] of DEVS) {
 const ctx = await b.newContext({ ...devices['iPhone 15 Pro'], serviceWorkers: 'block' }); const p = await ctx.newPage()
 await p.goto(url + '#/contracts'); await p.waitForSelector('.card')
 const sc = await p.evaluate(() => { scrollTo(0, 400); return scrollY })
+for (const [tag, name] of [['16promax-pwa', '16PM PWA']]) {
+  const c = await b.newContext({ ...devices[name], serviceWorkers: 'block' }); const q = await c.newPage()
+  const sa = SAFE[name]
+  await q.addInitScript((sa) => { document.addEventListener('DOMContentLoaded', () => {
+    for (const sh of document.styleSheets) { try { for (const r of [...sh.cssRules]) walk(r) } catch {} }
+    function walk(r) { if (r.cssRules) for (const c of r.cssRules) walk(c); if (r.style && r.style.cssText.includes('safe-area-inset')) r.style.cssText = r.style.cssText.replace(/env\(safe-area-inset-top\)/g, sa.top + 'px').replace(/env\(safe-area-inset-bottom\)/g, sa.bottom + 'px') }
+  }) }, sa)
+  const bars = {}
+  for (const t of ['calculator', 'contracts']) {
+    await q.goto(url + '#/' + t); await q.waitForTimeout(500)
+    bars[t] = await q.evaluate(() => { const r = document.querySelector('.tabs.bottom').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom)] })
+    await q.screenshot({ path: path.join(root, 'screens', `fit-${tag}-tab-${t}.png`) })
+  }
+  const same = JSON.stringify(bars.calculator) === JSON.stringify(bars.contracts)
+  console.log(`${same ? 'OK  ' : 'FAIL'} tab bar identical on calculator/contracts`, JSON.stringify(bars)); if (!same) bad++
+  await c.close()
+}
 console.log(`${sc > 0 ? 'OK  ' : 'FAIL'} contracts tab scrolls (${sc})`); if (sc <= 0) bad++
 await b.close(); server.close(); process.exit(bad ? 1 : 0)

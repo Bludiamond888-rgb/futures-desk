@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Calculator, DEFAULT_CALC } from './screens/Calculator'
 import { Contracts } from './screens/Contracts'
 import { Journal, type JournalTab } from './screens/Journal'
@@ -56,6 +56,28 @@ export default function App() {
     const el = document.documentElement
     el.classList.toggle('calc-lock', tab === 'calculator')
     return () => el.classList.remove('calc-lock')
+  }, [tab])
+  // Calculator is sized to the space above the (shared, fixed) tab bar, measured where iOS actually draws it.
+  useLayoutEffect(() => {
+    const el = document.documentElement
+    const measure = () => {
+      const bar = document.querySelector<HTMLElement>('.tabs.bottom')
+      const r = bar && getComputedStyle(bar).display !== 'none' ? bar.getBoundingClientRect() : null
+      if (tab !== 'calculator' || !r || r.height === 0) { el.style.removeProperty('--calc-h'); el.style.removeProperty('--vp-h'); return }
+      el.style.setProperty('--calc-h', `${Math.round(r.top)}px`)
+      el.style.setProperty('--vp-h', `${Math.round(r.bottom)}px`)
+    }
+    measure()
+    const raf = requestAnimationFrame(measure)
+    const t = setTimeout(measure, 400)
+    window.addEventListener('resize', measure)
+    window.visualViewport?.addEventListener('resize', measure)
+    return () => {
+      cancelAnimationFrame(raf); clearTimeout(t)
+      window.removeEventListener('resize', measure)
+      window.visualViewport?.removeEventListener('resize', measure)
+      el.style.removeProperty('--calc-h'); el.style.removeProperty('--vp-h')
+    }
   }, [tab])
 
   return (

@@ -584,8 +584,6 @@ input.sl:focus { border-color: var(--neg); }
 .spec-line b em { margin-left: 1px; }
 
 @media (max-width: 760px) {
-  html.calc-lock, html.calc-lock body { height: 100%; overflow: hidden; overscroll-behavior: none; }
-  .app.calc-lock { position: fixed; inset: 0; height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; }
   .app.calc-lock .topbar { padding-top: calc(8px + env(safe-area-inset-top)); padding-bottom: 8px; flex: none; }
   .app.calc-lock .logo { width: 24px; height: 24px; font-size: 13px; }
   /* main is the only scroller, and only kicks in if the keyboard shrinks the viewport */
@@ -617,18 +615,18 @@ input.sl:focus { border-color: var(--neg); }
   .calc .rr-line span { font-size: 11px; }
   .calc .quote-note, .calc .warn, .calc .cur-note { font-size: 11px; margin-top: 4px; }
   .calc .quote-note { display: none; }
-  .app.calc-lock .tabs.bottom { padding-top: 4px; padding-bottom: calc(4px + env(safe-area-inset-bottom)); }
 }
 
 /* ── Calculator: scale with available height (compact on ~660px viewports, roomier on tall phones) ── */
 @media (max-width: 760px) {
-  .app.calc-lock { position: fixed; top: 0; left: 0; right: 0; bottom: 0; height: auto; min-height: 0;
-    --avail-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  /* Same fixed tab bar as every other tab. The page itself stays in normal flow and is exactly as tall as the
+     space above the tab bar (--calc-h, measured in App.tsx), so there is nothing to scroll. */
+  html.calc-lock { overscroll-behavior: none; }
+  .app.calc-lock { min-height: 0; height: var(--calc-h, calc(100dvh - 62px)); overflow: hidden;
+    --avail-h: calc(var(--vp-h, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
   /* match the tab bar so no darker band can ever show below it */
   html.calc-lock, html.calc-lock body { background: #10161d; }
-  /* tab bar is the last flex item, so it always sits flush at the bottom with safe-area padding */
-  .app.calc-lock .tabs.bottom { position: relative; flex: none; bottom: auto; background: #10161d; backdrop-filter: none;
-    padding-top: 4px; padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+  
   .app.calc-lock main { display: flex; flex-direction: column; padding-top: clamp(8px, calc(-12.31px + 0.03077 * var(--avail-h)), 16px); padding-bottom: clamp(8px, calc(-12.31px + 0.03077 * var(--avail-h)), 16px); }
   .calc { flex: 1 0 auto; display: flex; flex-direction: column; }
   .calc .calc-grid { flex: 1 0 auto; display: flex; flex-direction: column; align-items: stretch; gap: clamp(8px, calc(-7.23px + 0.02308 * var(--avail-h)), 14px); }
@@ -654,10 +652,4 @@ input.sl:focus { border-color: var(--neg); }
   .calc .lines li { padding: clamp(5px, calc(-5.15px + 0.01538 * var(--avail-h)), 9px) 0; font-size: clamp(12.5px, calc(7.42px + 0.00769 * var(--avail-h)), 14.5px); }
   .calc .rr-line span { font-size: clamp(11px, calc(5.92px + 0.00769 * var(--avail-h)), 13px); }
   .calc .rr-line b { font-size: clamp(17px, calc(6.85px + 0.01538 * var(--avail-h)), 21px); }
-}
-
-/* see detectShortViewport() in main.tsx */
-@media (max-width: 760px) {
-  html.ios-short-vp .tabs.bottom, html.ios-short-vp .app.calc-lock .tabs.bottom { padding-bottom: 8px; }
-  html.ios-short-vp .app.calc-lock { --avail-h: calc(100dvh - env(safe-area-inset-top)); }
 }
