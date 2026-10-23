@@ -57,6 +57,7 @@ check('form net ES', await addTrade(page, { symbol: 'ES', datetime: '2026-10-15T
 check('form net FDAX', await addTrade(page, { symbol: 'FDAX', datetime: '2026-10-16T03:30', side: 'long', entry: '19400', exit: '19390', qty: '1', fees: '4', strategy: 'Pullback' }), '-€254.00')
 
 await page.reload()
+await page.waitForSelector('table.trades tbody tr', { state: 'attached' })
 check('rows after reload', await page.locator('table.trades tbody tr').count(), 3)
 await page.click('.subtabs button:has-text("Stats")')
 check('USD net', norm(await page.textContent('[data-testid=net-USD]')), '$537.30')
@@ -141,6 +142,7 @@ const ws = (x) => norm(x).replace(/\s+/g, ' ')
 await page.goto(url + '#/calculator')
 check('calc: prop panel hidden without accounts', await page.locator('[data-testid=calc-prop]').count(), 0)
 await page.goto(url + '#/prop')
+await page.waitForSelector('text=No prop accounts yet')
 check('prop: empty state', await page.locator('text=No prop accounts yet').count(), 1)
 await page.click('button:has-text("+ New account")')
 await page.selectOption('.modal select[name=firm]', 'topstep')
@@ -187,6 +189,7 @@ check('prop: persisted after reload', norm(await page.textContent('[data-testid=
 
 // calculator integration
 await page.goto(url + '#/calculator')
+await page.waitForSelector('[data-testid=calc-prop]')
 check('calc: prop panel shown', await page.locator('[data-testid=calc-prop]').count(), 1)
 check('calc: collapsed by default', await page.locator('.pp-body').count(), 0)
 await page.click('.pp-toggle')

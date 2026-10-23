@@ -1,6 +1,5 @@
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import type { ContractSpec, Trade } from '../data/types'
-import { CalcPropPanel } from '../components/CalcPropPanel'
 import type { PropAccount } from '../lib/prop'
 import { ContractPicker } from '../components/ContractPicker'
 import { calculate, calculateTpSl, formatMoney, formatNumber, formatTreasury, parseMove, parseTreasury, type MoveUnit, type Side } from '../lib/calc'
@@ -29,6 +28,9 @@ interface Props {
   accounts?: PropAccount[]
   trades?: Trade[]
 }
+
+// Prop-firm rules (~35 KB) only load for users who have prop accounts.
+const CalcPropPanel = lazy(() => import('../components/CalcPropPanel').then((m) => ({ default: m.CalcPropPanel })))
 
 export const DEFAULT_CALC: CalcState = { symbol: 'MNQ', qty: '1', move: '10', unit: 'points' }
 
@@ -145,7 +147,9 @@ export function Calculator({ contracts, symbol, onSymbolChange, accounts = [], t
               </div>
             </div>
           </div>
-          <CalcPropPanel accounts={accounts} trades={trades} spec={spec} qty={qtyOk ? qty : null} unit={st.unit} />
+          {accounts.length > 0 && (
+            <Suspense fallback={null}><CalcPropPanel accounts={accounts} trades={trades} spec={spec} qty={qtyOk ? qty : null} unit={st.unit} /></Suspense>
+          )}
         </div>
 
         <div className="panel result">
