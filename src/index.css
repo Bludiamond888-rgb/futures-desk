@@ -575,81 +575,36 @@ input.sl:focus { border-color: var(--neg); }
 .tpsl-box.sl { border-color: color-mix(in srgb, var(--neg) 40%, var(--line)); }
 .tpsl-box.sl b, .tpsl-box.sl i { color: var(--neg); }
 
-/* ═════════════ Calculator: compact rows + one-screen scroll lock (phones) ═════════════ */
+/* ═════════════ Calculator: compact rows (normal scrolling page like other tabs) ═════════════ */
 .inputs .qty-row .seg, .inputs .tpsl-inputs .seg { margin-top: 0; }
 .rr-line { display: grid !important; grid-template-columns: 1fr 1fr; gap: 12px; }
 .rr-line div { display: flex; flex-direction: column; gap: 2px; }
 .rr-line div:last-child { text-align: right; }
-.rr-line b { text-align: inherit !important; font-size: 17px; }
+.rr-line b { text-align: inherit !important; font-size: 19px; }
 .spec-line b em { margin-left: 1px; }
+.tpsl-box { container-type: inline-size; }
+.tpsl-box b { white-space: nowrap; font-size: clamp(20px, 14cqi, 32px); }
 
 @media (max-width: 760px) {
-  .app.calc-lock .topbar { padding-top: calc(8px + env(safe-area-inset-top)); padding-bottom: 8px; flex: none; }
-  .app.calc-lock .logo { width: 24px; height: 24px; font-size: 13px; }
-  /* main is the only scroller, and only kicks in if the keyboard shrinks the viewport */
-  .app.calc-lock main { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
-    padding-top: 8px; padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
-  .calc .calc-grid { gap: 8px; }
-  .calc .panel { padding: 10px 12px; border-radius: 12px; }
+  .calc .calc-grid { gap: 12px; }
+  .calc .panel { padding: 14px; }
   .calc .inputs { gap: 0; }
-  .calc .field-label { font-size: 10.5px; margin: 0 0 4px; letter-spacing: .07em; }
-  .calc .inputs .row2 { gap: 8px; margin-top: 8px; }
-  .calc .picker-control { min-height: 42px; }
-  .calc .picker-value .sym { font-size: 16px; }
-  .calc #qty, .calc #tp, .calc #sl, .calc #entry { height: 42px; padding: 0 10px; font-size: 17px; }
-  .calc .stepper { grid-template-columns: 40px 1fr 40px; gap: 4px; }
-  .calc .stepper button { height: 42px; }
-  .calc .seg { padding: 3px; height: 42px; }
-  .calc .seg button { padding: 0 6px; font-size: 14px; }
-  .calc .hint { font-size: 11.5px; margin-top: 6px; line-height: 1.35; }
-  .calc .result-label { font-size: 12px; }
-  .calc .tpsl { margin-top: 6px; gap: 8px; }
-  .calc .tpsl-box { padding: 8px 10px; gap: 1px; border-radius: 10px; }
-  .calc .tpsl-box span { font-size: 10.5px; }
-  .calc .tpsl-box b { font-size: clamp(19px, 6vw, 26px); }
-  .calc .tpsl-box em { font-size: 12px; }
-  .calc .tpsl-box i { font-size: 13px; }
-  .calc .lines { margin-top: 6px; }
-  .calc .lines li { padding: 5px 0; font-size: 12.5px; }
+  .calc .field-label { font-size: 11.5px; margin: 0 0 6px; }
+  .calc .inputs .row2 { gap: 10px; margin-top: 12px; }
+  .calc .picker-control { min-height: 48px; }
+  .calc #qty, .calc #tp, .calc #sl, .calc #entry { height: 48px; padding: 0 12px; font-size: 19px; }
+  .calc .stepper { grid-template-columns: 44px 1fr 44px; gap: 6px; }
+  .calc .stepper button { height: 48px; }
+  .calc .seg { padding: 3px; height: 48px; }
+  .calc .seg button { padding: 0 6px; font-size: 15px; }
+  .calc .hint { font-size: 12px; margin-top: 8px; line-height: 1.4; }
+  .calc .result-label { font-size: 13px; }
+  .calc .tpsl { margin-top: 10px; gap: 10px; }
+  .calc .tpsl-box { padding: 12px; gap: 2px; }
+  .calc .tpsl-box span { font-size: 11.5px; }
+  .calc .tpsl-box em, .calc .tpsl-box i { font-size: 14px; }
+  .calc .lines { margin-top: 10px; }
+  .calc .lines li { padding: 8px 0; font-size: 13.5px; }
   .calc .lines li:last-child { border-bottom: 0; }
-  .calc .rr-line span { font-size: 11px; }
-  .calc .quote-note, .calc .warn, .calc .cur-note { font-size: 11px; margin-top: 4px; }
-  .calc .quote-note { display: none; }
-}
-
-/* ── Calculator: scale with available height (compact on ~660px viewports, roomier on tall phones) ── */
-@media (max-width: 760px) {
-  /* Same fixed tab bar as every other tab. The page itself stays in normal flow and is exactly as tall as the
-     space above the tab bar (--calc-h, measured in App.tsx), so there is nothing to scroll. */
-  html.calc-lock { overscroll-behavior: none; }
-  .app.calc-lock { min-height: 0; height: var(--calc-h, calc(100dvh - 62px)); overflow: hidden;
-    --avail-h: calc(var(--vp-h, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
-  /* match the tab bar so no darker band can ever show below it */
-  html.calc-lock, html.calc-lock body { background: #10161d; }
-  
-  .app.calc-lock main { display: flex; flex-direction: column; padding-top: clamp(8px, calc(-12.31px + 0.03077 * var(--avail-h)), 16px); padding-bottom: clamp(8px, calc(-12.31px + 0.03077 * var(--avail-h)), 16px); }
-  .calc { flex: 1 0 auto; display: flex; flex-direction: column; }
-  .calc .calc-grid { flex: 1 0 auto; display: flex; flex-direction: column; align-items: stretch; gap: clamp(8px, calc(-7.23px + 0.02308 * var(--avail-h)), 14px); }
-  .calc .result { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: space-evenly; }
-  .calc .inputs { flex: 1.4 0 auto; justify-content: space-between; }
-  .calc .panel { padding: clamp(10px, calc(-5.23px + 0.02308 * var(--avail-h)), 16px) clamp(12px, calc(1.85px + 0.01538 * var(--avail-h)), 16px); }
-  .calc .field-label { font-size: clamp(10.5px, calc(5.42px + 0.00769 * var(--avail-h)), 12.5px); margin-bottom: clamp(4px, calc(-3.62px + 0.01154 * var(--avail-h)), 7px); }
-  .calc .inputs .row2 { gap: clamp(8px, calc(-2.15px + 0.01538 * var(--avail-h)), 12px); margin-top: clamp(8px, calc(-7.23px + 0.02308 * var(--avail-h)), 14px); }
-  .calc #qty, .calc #tp, .calc #sl, .calc #entry, .calc .stepper button, .calc .seg { height: clamp(42px, calc(6.46px + 0.05385 * var(--avail-h)), 56px); }
-  .calc .picker-control { min-height: clamp(42px, calc(6.46px + 0.05385 * var(--avail-h)), 56px); }
-  .calc #qty, .calc #tp, .calc #sl, .calc #entry { font-size: clamp(17px, calc(6.85px + 0.01538 * var(--avail-h)), 21px); }
-  .calc .stepper { grid-template-columns: clamp(40px, calc(9.54px + 0.04615 * var(--avail-h)), 52px) 1fr clamp(40px, calc(9.54px + 0.04615 * var(--avail-h)), 52px); }
-  .calc .seg button, .calc .picker-value { font-size: clamp(14px, calc(7.65px + 0.00962 * var(--avail-h)), 16.5px); }
-  .calc .picker-value .sym { font-size: clamp(16px, calc(8.38px + 0.01154 * var(--avail-h)), 19px); }
-  .calc .result-label { font-size: clamp(12px, calc(5.65px + 0.00962 * var(--avail-h)), 14.5px); }
-  .calc .tpsl { margin-top: clamp(6px, calc(-9.23px + 0.02308 * var(--avail-h)), 12px); gap: clamp(8px, calc(-2.15px + 0.01538 * var(--avail-h)), 12px); }
-  .calc .tpsl-box { padding: clamp(8px, calc(-7.23px + 0.02308 * var(--avail-h)), 14px) clamp(10px, calc(-0.15px + 0.01538 * var(--avail-h)), 14px); gap: clamp(1px, calc(-6.62px + 0.01154 * var(--avail-h)), 4px); }
-  .calc .tpsl-box span { font-size: clamp(10.5px, calc(5.42px + 0.00769 * var(--avail-h)), 12.5px); }
-  .calc .tpsl-box b { font-size: clamp(19px, min(calc(-8.46px + 0.04615 * var(--avail-h)), 14cqi), 34px); white-space: nowrap; }
-  .calc .tpsl-box { container-type: inline-size; }
-  .calc .tpsl-box em, .calc .tpsl-box i { font-size: clamp(12px, calc(3.12px + 0.01346 * var(--avail-h)), 15.5px); }
-  .calc .lines { margin-top: clamp(6px, calc(-4.15px + 0.01538 * var(--avail-h)), 10px); }
-  .calc .lines li { padding: clamp(5px, calc(-5.15px + 0.01538 * var(--avail-h)), 9px) 0; font-size: clamp(12.5px, calc(7.42px + 0.00769 * var(--avail-h)), 14.5px); }
-  .calc .rr-line span { font-size: clamp(11px, calc(5.92px + 0.00769 * var(--avail-h)), 13px); }
-  .calc .rr-line b { font-size: clamp(17px, calc(6.85px + 0.01538 * var(--avail-h)), 21px); }
+  .calc .rr-line span { font-size: 12px; }
 }
