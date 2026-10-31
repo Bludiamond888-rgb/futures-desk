@@ -63,6 +63,7 @@ export function inputDigit(state: CalcState, d: string): CalcState {
     return { ...state, display: d, fresh: false, error: false }
   }
   if (state.display === '0' && d !== '.') return { ...state, display: d }
+  if (state.display === '-0' && d !== '.') return { ...state, display: '-' + d }
   if (state.display.replace('-', '').replace('.', '').length >= MAX_LEN) return state
   return { ...state, display: state.display + d }
 }
@@ -82,11 +83,17 @@ export function backspace(state: CalcState): CalcState {
   if (state.error) return initialCalc()
   if (state.fresh) return state
   const next = state.display.slice(0, -1)
-  if (!next || next === '-' || next === '-0') return { ...state, display: '0', fresh: true }
+  if (state.display === '-0' || !next || next === '-') return { ...state, display: '0', fresh: true }
   return { ...state, display: next }
 }
 
 export function inputOp(state: CalcState, op: Op): CalcState {
+  // '−' at the start or right after another operator begins a negative number
+  if (op === '-' && !state.error && state.fresh && (state.pending || (state.acc === null && state.display === '0' && !state.expr))) {
+    return { ...state, display: '-0', fresh: false }
+  }
+  // Operator pressed on a lone '-' entry: treat as replacing the pending operator
+  if (state.display === '-0' && !state.fresh && state.pending) return { ...state, display: '0', fresh: true, pending: op, expr: formatNum(state.acc ?? 0) + ' ' + op }
   if (state.error) return { ...initialCalc(), pending: op, acc: 0, expr: '0 ' + op, fresh: true }
   const cur = parseDisplay(state.display)
   if (state.acc !== null && state.pending && !state.fresh) {
@@ -142,10 +149,11 @@ export function percent(state: CalcState): CalcState {
 }
 
 export function negate(state: CalcState): CalcState {
-  if (state.error) return initialCalc()
-  if (state.display === '0' || state.display === '0.') return state
+  if (state.error) return { ...initialCalc(), display: '-0', fresh: false }
+  // Fresh entry right after an operator, or at the very start: begin a negative number
+  if (state.fresh && (state.pending || (state.acc === null && state.display === '0'))) return { ...state, display: '-0', fresh: false }
   const display = state.display.startsWith('-') ? state.display.slice(1) : '-' + state.display
-  return { ...state, display, fresh: state.fresh && state.acc === null ? false : state.fresh }
+  return { ...state, display, fresh: false }
 }
 
 /** Load a value (e.g. from history) as the current entry. */
@@ -160,12 +168,12 @@ export function groupDisplay(s: string): string {
   const neg = s.startsWith('-')
   const [i, f] = (neg ? s.slice(1) : s).split('.')
   const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return (neg ? '-' : '') + g + (f !== undefined ? '.' + f : '')
+  return (neg ? '−' : '') + g + (f !== undefined ? '.' + f : '')
 }
 
 /** Group every number inside an expression line. */
 export function groupExpr(s: string): string {
-  return s.replace(/-?\d+(\.\d*)?/g, (m) => groupDisplay(m))
+  return s.replace(/(?<![\d.])-?\d+(\.\d*)?/g, (m) => groupDisplay(m))
 }
 
 export type CalcAction =

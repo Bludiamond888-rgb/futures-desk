@@ -134,5 +134,28 @@ describe('futures calc extras', () => {
     expect(run([...digits('200'), { type: 'op', op: '+' }, ...digits('10'), { type: 'pct' }, { type: 'eq' }]).display).toBe('220')
   })
   it('negate', () => { expect(run([...digits('5'), { type: 'neg' }]).display).toBe('-5') })
-  it('grouping', () => { expect(groupDisplay('-1234567.89')).toBe('-1,234,567.89'); expect(groupDisplay('Error')).toBe('Error') })
+  it('grouping', () => { expect(groupDisplay('-1234567.89')).toBe('−1,234,567.89'); expect(groupDisplay('Error')).toBe('Error') })
+})
+
+describe('negative numbers', () => {
+  const run = (keys: import('./numpad').CalcAction[]) => keys.reduce(reduceCalc, initialCalc())
+  const D = (s: string) => [...s].map((c) => (c === '.' ? { type: 'dot' as const } : { type: 'digit' as const, d: c }))
+  const mul = { type: 'op' as const, op: '×' as const }, sub = { type: 'op' as const, op: '-' as const }, add = { type: 'op' as const, op: '+' as const }
+  const eq = { type: 'eq' as const }, neg = { type: 'neg' as const }
+  it('+/- after operator: 5 × −3 = −15', () => {
+    const s = run([...D('5'), mul, neg, ...D('3'), eq])
+    expect(s.display).toBe('-15'); expect(groupDisplay(s.display)).toBe('−15'); expect(groupExpr(s.expr)).toBe('5 × −3 =')
+  })
+  it('− after operator starts a negative number', () => { expect(run([...D('5'), mul, sub, ...D('3'), eq]).display).toBe('-15') })
+  it('− at start starts a negative number', () => { expect(run([sub, ...D('4'), add, ...D('10'), eq]).display).toBe('6') })
+  it('+/- from 0 at start', () => { expect(run([neg, ...D('2.5'), mul, ...D('2'), eq]).display).toBe('-5') })
+  it('+/- toggles current entry', () => { expect(run([...D('7'), neg]).display).toBe('-7'); expect(run([...D('7'), neg, neg]).display).toBe('7') })
+  it('negative result displays grouped and chains', () => {
+    const s = run([...D('1000'), sub, ...D('2250.5'), eq])
+    expect(groupDisplay(s.display)).toBe('−1,250.5')
+    expect(run([...D('1000'), sub, ...D('2250.5'), eq, mul, ...D('2'), eq]).display).toBe('-2501')
+    expect(run([...D('1000'), sub, ...D('2250.5'), eq, neg]).display).toBe('1250.5')
+  })
+  it('subtraction still works after =', () => { expect(run([...D('10'), add, ...D('5'), eq, sub, ...D('3'), eq]).display).toBe('12') })
+  it('backspace on lone minus', () => { expect(run([...D('5'), mul, neg, { type: 'back' }]).display).toBe('0') })
 })

@@ -20,11 +20,17 @@ const shot = async (n, full = false) => { await p.waitForTimeout(250); await p.s
 await p.goto(url + '#/journal'); await p.waitForSelector('.j-head'); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForSelector('.j-head')
 await shot('01-entry-button')
 await p.click('[data-testid=open-quickcalc]'); await p.waitForSelector('[data-testid=quickcalc]')
-await shot('02-empty')
+const h = async () => p.evaluate(() => { const r = document.querySelector('.modal').getBoundingClientRect(); return `${Math.round(r.top)}/${Math.round(r.height)}` })
+const hEmpty = await h(); await shot('02-empty')
 for (const k of ['4','2','5','0','dot','5','mul','2','eq']) await p.click(`[data-testid=qc-${k}]`)
-const r = await p.textContent('[data-testid=qc-result]'), e = await p.textContent('[data-testid=qc-expr]')
-console.log('result', r, 'expr', e); if (r !== '8,501') process.exitCode = 1
-await shot('03-4250.5x2')
+const hAfter = await h(); console.log('result', await p.textContent('[data-testid=qc-result]'), 'sheet', hEmpty, hAfter, hEmpty === hAfter ? 'NO SHIFT' : 'SHIFTED')
+if (hEmpty !== hAfter) process.exitCode = 1
+await shot('04-after-calc')
+for (const k of ['clear','5','mul','neg','3','eq']) await p.click(`[data-testid=qc-${k}]`)
+const r = await p.textContent('[data-testid=qc-result]'), e = await p.textContent('[data-testid=qc-expr]'); console.log('neg', e, r); if (r !== '−15') process.exitCode = 1
+await shot('05-negative-5x-3')
+await p.click('[data-testid=qc-history]'); await p.waitForSelector('[data-testid=qc-hist]'); const hH = await h(); console.log('history sheet', hH, hH === hEmpty ? 'NO SHIFT' : 'SHIFTED'); if (hH !== hEmpty) process.exitCode = 1
+await shot('06-history-open')
 const ov = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth); console.log('h-overflow', ov)
 console.log('errors', errors)
 await b.close(); server.close()

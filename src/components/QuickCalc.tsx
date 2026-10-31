@@ -28,6 +28,7 @@ export default function QuickCalc({ onClose }: { onClose: () => void }) {
   const [s, dispatch] = useReducer(reduceCalc, undefined, initialCalc)
   const [hist, setHist] = useState<H[]>(loadH)
   const [copied, setCopied] = useState(false)
+  const [showH, setShowH] = useState(false)
   const last = useRef('')
 
   useEffect(() => {
@@ -53,26 +54,36 @@ export default function QuickCalc({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="Calculator" onClose={onClose}>
       <div className="qc" data-testid="quickcalc">
+        <div className="qc-top">
+        <button type="button" className={'qc-hbtn' + (showH ? ' on' : '')} aria-label="History" aria-expanded={showH} data-testid="qc-history" onClick={() => setShowH((v) => !v)}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
+        </button>
         <button type="button" className="qc-display" onClick={copy} aria-label={`Result ${shown}. Tap to copy`} aria-live="polite">
           <span className="qc-expr" data-testid="qc-expr">{groupExpr(s.expr) || '\u00a0'}</span>
           <span className={'qc-result' + (s.error ? ' err' : '') + (shown.length > 12 ? ' sm' : '')} data-testid="qc-result">{shown}</span>
           <span className="qc-hint">{copied ? 'Copied' : 'Tap result to copy'}</span>
         </button>
+        </div>
+        <div className="qc-body">
         <div className="qc-pad" role="group" aria-label="Keypad">
           {KEYS.map((k) => (
             <button key={k.id} type="button" className={'qc-key' + (k.cls ? ' ' + k.cls : '')} aria-label={k.aria} data-testid={'qc-' + k.id} onClick={() => dispatch(k.action)}>{k.label}</button>
           ))}
         </div>
-        {hist.length > 0 && (
-          <section className="qc-hist" aria-label="Recent results">
-            <div className="qc-hist-head"><span>Recent</span><button type="button" className="linkish" onClick={() => { setHist([]); localStorage.removeItem(HKEY) }}>Clear</button></div>
-            {hist.map((h, i) => (
-              <button key={i} type="button" className="qc-hist-row" onClick={() => dispatch({ type: 'use', v: h.v })} aria-label={`Use ${h.v}`}>
-                <span>{groupExpr(h.expr)}</span><b>{groupDisplay(String(h.v))}</b>
-              </button>
-            ))}
+        {showH && (
+          <section className="qc-hist" aria-label="Recent results" data-testid="qc-hist">
+            <div className="qc-hist-head"><span>History</span>{hist.length > 0 && <button type="button" className="linkish" onClick={() => { setHist([]); localStorage.removeItem(HKEY) }}>Clear</button>}</div>
+            <div className="qc-hist-list">
+              {hist.length === 0 && <div className="qc-hist-empty">No calculations yet</div>}
+              {hist.map((h, i) => (
+                <button key={i} type="button" className="qc-hist-row" onClick={() => { dispatch({ type: 'use', v: h.v }); setShowH(false) }} aria-label={`Use ${h.v}`}>
+                  <span>{groupExpr(h.expr)}</span><b>{groupDisplay(String(h.v))}</b>
+                </button>
+              ))}
+            </div>
           </section>
         )}
+        </div>
       </div>
     </Modal>
   )
