@@ -31,6 +31,20 @@ const r = await p.textContent('[data-testid=qc-result]'), e = await p.textConten
 await shot('05-negative-5x-3')
 await p.click('[data-testid=qc-history]'); await p.waitForSelector('[data-testid=qc-hist]'); const hH = await h(); console.log('history sheet', hH, hH === hEmpty ? 'NO SHIFT' : 'SHIFTED'); if (hH !== hEmpty) process.exitCode = 1
 await shot('06-history-open')
+await p.click('.modal [aria-label=Close]')
+await p.click('[data-testid=open-quickcalc]'); await p.waitForSelector('[data-testid=quickcalc]')
+for (const k of ['clear','4','2','5','0','dot','5','mul','3']) await p.click(`[data-testid=qc-${k}]`)
+await shot('07-typed')
+await p.click('.modal [aria-label=Close]'); await p.waitForSelector('[data-testid=quickcalc]', { state: 'detached' })
+await p.click('[data-testid=open-quickcalc]'); await p.waitForSelector('[data-testid=quickcalc]')
+let rr = await p.textContent('[data-testid=qc-result]'), ee = await p.textContent('[data-testid=qc-expr]'); console.log('reopened', ee, rr); if (rr !== '3' || !ee.startsWith('4,250.5 ×')) process.exitCode = 1
+await shot('08-reopened')
+await p.reload(); await p.waitForSelector('[data-testid=open-quickcalc]'); await p.click('[data-testid=open-quickcalc]'); await p.waitForSelector('[data-testid=quickcalc]')
+rr = await p.textContent('[data-testid=qc-result]'); console.log('after relaunch', await p.textContent('[data-testid=qc-expr]'), rr); if (rr !== '3') process.exitCode = 1
+await shot('09-after-relaunch')
+await p.click('[data-testid=qc-eq]'); console.log('eq', await p.textContent('[data-testid=qc-result]'))
+await p.click('[data-testid=qc-clear]'); await p.reload(); await p.waitForSelector('[data-testid=open-quickcalc]'); await p.click('[data-testid=open-quickcalc]')
+console.log('after AC+relaunch', await p.textContent('[data-testid=qc-result]'))
 const ov = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth); console.log('h-overflow', ov)
 console.log('errors', errors)
 await b.close(); server.close()

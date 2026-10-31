@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { Modal } from './Modal'
-import { groupDisplay, groupExpr, initialCalc, reduceCalc, type CalcAction } from '../lib/numpad'
+import { groupDisplay, groupExpr, loadCalc, reduceCalc, saveCalc, type CalcAction } from '../lib/numpad'
 
 type K = { label: string; aria: string; action: CalcAction; cls?: string; id: string }
 const d = (n: string): K => ({ label: n, aria: n, action: { type: 'digit', d: n }, id: n })
@@ -25,11 +25,14 @@ type H = { expr: string; v: number }
 const loadH = (): H[] => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]') } catch { return [] } }
 
 export default function QuickCalc({ onClose }: { onClose: () => void }) {
-  const [s, dispatch] = useReducer(reduceCalc, undefined, initialCalc)
+  const [s, dispatch] = useReducer(reduceCalc, undefined, () => loadCalc())
   const [hist, setHist] = useState<H[]>(loadH)
   const [copied, setCopied] = useState(false)
   const [showH, setShowH] = useState(false)
-  const last = useRef('')
+  const last = useRef(s.expr + s.display) // don't re-log a restored result
+
+  // Keep the entry across sheet close / app relaunch; only AC resets it
+  useEffect(() => { saveCalc(s) }, [s])
 
   useEffect(() => {
     if (s.expr.endsWith('=') && !s.error && last.current !== s.expr + s.display) {

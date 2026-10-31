@@ -200,3 +200,32 @@ export function reduceCalc(state: CalcState, action: CalcAction): CalcState {
     case 'use': return loadValue(state, action.v)
   }
 }
+
+export const CALC_STATE_KEY = 'futures-calc.quickcalc.state'
+const OPS: Op[] = ['+', '-', '×', '÷']
+
+/** Validate a stored/parsed value back into a CalcState; anything malformed -> fresh 0. */
+export function reviveCalc(raw: unknown): CalcState {
+  const r = raw as Partial<CalcState> | null
+  if (!r || typeof r !== 'object') return initialCalc()
+  const display = typeof r.display === 'string' && /^(-?\d*\.?\d*(e[+-]?\d+)?|Error)$/.test(r.display) && r.display !== '' ? r.display : null
+  if (display === null) return initialCalc()
+  const acc = typeof r.acc === 'number' && isFinite(r.acc) ? r.acc : null
+  const pending = r.pending && OPS.includes(r.pending) ? r.pending : null
+  return {
+    display,
+    acc: pending ? acc ?? 0 : acc,
+    pending,
+    fresh: typeof r.fresh === 'boolean' ? r.fresh : true,
+    expr: typeof r.expr === 'string' ? r.expr.slice(0, 80) : '',
+    error: display === 'Error' || r.error === true,
+  }
+}
+
+export function loadCalc(storage: Pick<Storage, 'getItem'> | undefined = globalThis.localStorage): CalcState {
+  try { const s = storage?.getItem(CALC_STATE_KEY); return s ? reviveCalc(JSON.parse(s)) : initialCalc() } catch { return initialCalc() }
+}
+
+export function saveCalc(state: CalcState, storage: Pick<Storage, 'setItem'> | undefined = globalThis.localStorage): void {
+  try { storage?.setItem(CALC_STATE_KEY, JSON.stringify(state)) } catch { /* quota / private mode */ }
+}

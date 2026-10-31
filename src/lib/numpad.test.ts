@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { backspace, clearAll, equals, initialCalc, inputDigit, inputDot, inputOp, reduceCalc } from './numpad'
 import { groupDisplay, groupExpr } from "./numpad"
+import { loadCalc, saveCalc, reviveCalc, CALC_STATE_KEY } from './numpad'
 
 describe('numpad calculator', () => {
   it('starts at 0', () => {
@@ -158,4 +159,28 @@ describe('negative numbers', () => {
   })
   it('subtraction still works after =', () => { expect(run([...D('10'), add, ...D('5'), eq, sub, ...D('3'), eq]).display).toBe('12') })
   it('backspace on lone minus', () => { expect(run([...D('5'), mul, neg, { type: 'back' }]).display).toBe('0') })
+})
+
+describe('persistence', () => {
+  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v) }, m } }
+  const run = (keys: import('./numpad').CalcAction[], s = initialCalc()) => keys.reduce(reduceCalc, s)
+  it('round-trips a typed entry', () => {
+    const st = mem(); const s = run([{ type: 'digit', d: '4' }, { type: 'digit', d: '2' }, { type: 'dot' }, { type: 'digit', d: '5' }])
+    saveCalc(s, st); expect(loadCalc(st)).toEqual(s)
+  })
+  it('round-trips a pending operation and continues', () => {
+    const st = mem(); const s = run([{ type: 'digit', d: '5' }, { type: 'op', op: '×' }, { type: 'neg' }, { type: 'digit', d: '3' }])
+    saveCalc(s, st); const back = loadCalc(st)
+    expect(back.expr).toBe('5 ×'); expect(reduceCalc(back, { type: 'eq' }).display).toBe('-15')
+  })
+  it('keeps last result', () => {
+    const st = mem(); const s = run([{ type: 'digit', d: '9' }, { type: 'op', op: '+' }, { type: 'digit', d: '1' }, { type: 'eq' }])
+    saveCalc(s, st); expect(loadCalc(st).display).toBe('10'); expect(loadCalc(st).expr).toBe('9 + 1 =')
+  })
+  it('AC state persists as 0', () => { const st = mem(); saveCalc(reduceCalc(run([{ type: 'digit', d: '7' }]), { type: 'clear' }), st); expect(loadCalc(st)).toEqual(initialCalc()) })
+  it('garbage falls back to 0', () => {
+    const st = mem(); st.m.set(CALC_STATE_KEY, '{bad'); expect(loadCalc(st)).toEqual(initialCalc())
+    expect(reviveCalc({ display: 'abc' })).toEqual(initialCalc()); expect(reviveCalc(null)).toEqual(initialCalc())
+    expect(loadCalc(undefined)).toEqual(initialCalc())
+  })
 })
