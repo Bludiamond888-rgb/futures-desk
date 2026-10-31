@@ -17,6 +17,7 @@ const Contracts = lazy(loaders.contracts)
 const Journal = lazy(loaders.journal)
 const Prop = lazy(loaders.prop)
 const PropPricesTab = lazy(loaders.prices)
+const QuickCalc = lazy(() => import('./components/QuickCalc'))
 
 const TABS: { id: Tab; label: string; Icon: ComponentType }[] = [
   { id: 'calculator', label: 'Calculator', Icon: TabCalc },
@@ -32,6 +33,7 @@ export default function App() {
   const { strategies, setStrategies } = useStrategies()
   const { accounts, setAccounts, upsertAccount, removeAccount } = usePropAccounts()
   const health = useStorageHealth()
+  const [qc, setQc] = useState(false)
 
   useEffect(() => {
     const on = () => setRoute(parseHash(location.hash))
@@ -55,11 +57,16 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand"><Logo /> <span>Futures Calc</span></div>
-        <nav className="tabs top" aria-label="Sections">
-          {TABS.map((t) => (
-            <button key={t.id} className={tab === t.id ? 'on' : ''} aria-current={tab === t.id ? 'page' : undefined} onClick={() => go(t.id)}>{t.label}</button>
-          ))}
-        </nav>
+        <div className="topbar-right">
+          <nav className="tabs top" aria-label="Sections">
+            {TABS.map((t) => (
+              <button key={t.id} className={tab === t.id ? 'on' : ''} aria-current={tab === t.id ? 'page' : undefined} onClick={() => go(t.id)}>{t.label}</button>
+            ))}
+          </nav>
+          <button type="button" className="qc-btn" aria-label="Open calculator" data-testid="open-quickcalc" onClick={() => setQc(true)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="3" /><rect x="7.5" y="5.5" width="9" height="4" rx="1" /><path d="M8 13.5h.01M12 13.5h.01M16 13.5h.01M8 17.5h.01M12 17.5h.01M16 17.5h.01" strokeWidth="2.6" /></svg>
+          </button>
+        </div>
       </header>
       {health.error && (
         <div className="banner err" role="alert">{health.error} <button type="button" className="linkish" onClick={clearStorageError}>Dismiss</button></div>
@@ -106,6 +113,7 @@ export default function App() {
           )}
         </Suspense>
       </main>
+      {qc && <Suspense fallback={null}><QuickCalc onClose={() => setQc(false)} /></Suspense>}
       <nav className="tabs bottom" aria-label="Sections">
         {TABS.map(({ id, label, Icon }) => (
           <button key={id} className={tab === id ? 'on' : ''} aria-current={tab === id ? 'page' : undefined} onClick={() => go(id)}>

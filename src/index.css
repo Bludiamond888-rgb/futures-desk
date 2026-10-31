@@ -671,3 +671,27 @@ html, body { overscroll-behavior: none; }
   .topbar { padding-top: env(safe-area-inset-top); padding-bottom: 0; }
   .bulk-bar { top: auto; }
 }
+
+/* ═════════════ Quick calculator (header button → sheet) ═════════════ */
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.qc-btn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); }
+.qc-btn:active { background: var(--line); }
+.qc { display: flex; flex-direction: column; gap: 12px; touch-action: manipulation; overflow-x: hidden; }
+.qc-display { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; width: 100%; padding: 12px 14px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); text-align: right; min-width: 0; }
+.qc-expr { color: var(--muted); font-family: var(--mono); font-size: 14px; min-height: 20px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qc-result { font-family: var(--mono); font-size: 38px; font-weight: 600; line-height: 1.15; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.qc-result.sm { font-size: 28px; }
+.qc-result.err { color: var(--neg); }
+.qc-hint { font-size: 11px; color: var(--dim); }
+.qc-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.qc-key { height: 60px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel2); font-size: 22px; font-weight: 600; }
+.qc-key:active { filter: brightness(1.3); }
+.qc-key.fn { color: var(--muted); font-size: 18px; }
+.qc-key.op { color: var(--accent2); font-size: 26px; }
+.qc-key.eq { background: var(--accent); border-color: var(--accent); color: #04140d; font-size: 26px; }
+.qc-hist { border-top: 1px solid var(--line); padding-top: 8px; }
+.qc-hist-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.qc-hist-row { display: flex; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; align-items: center; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 6px 2px; font-family: var(--mono); font-size: 14px; color: var(--muted); }
+.qc-hist-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.qc-hist-row b { color: var(--text); }
+.modal:has(.qc) .modal-body { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
